@@ -501,7 +501,7 @@ public class MetaTileEntityPatternHatch extends MetaTileEntityMultiblockPart
     @Override
     protected ModularUI createUI(EntityPlayer entityPlayer) {
         ModularUI.Builder builder = ModularUI.builder(GuiTextures.BACKGROUND_EXTENDED, 280, 236);
-        builder.label(8, 5, "container.patternhatch.pattern_hatch", -1);
+        builder.widget(new tj.patternhatch.gui.ShadowLabelWidget(8, 5, "container.patternhatch.pattern_hatch", -1));
         gregtech.api.gui.resources.TextureArea line =
                 gregtech.api.gui.resources.TextureArea.fullImage("patternhatch:textures/gui/line.png");
         builder.image(7, 13, 162, 1, line);
@@ -519,13 +519,13 @@ public class MetaTileEntityPatternHatch extends MetaTileEntityMultiblockPart
                 builder.widget(new PatternSlotWidget(patternInventory, row * 9 + col, 8 + col * 18, 16 + row * 18));
             }
         }
-        builder.label(8, 90, "container.patternhatch.catalysts", 0xFF55FF55);
+        builder.widget(new tj.patternhatch.gui.ShadowLabelWidget(8, 90, "container.patternhatch.catalysts", 0xFF55FF55));
         for (int i = 0; i < CATALYST_SLOTS; i++) {
             gregtech.api.gui.widgets.SlotWidget slot = new gregtech.api.gui.widgets.SlotWidget(catalystInventory, i, 8 + i * 18, 100, true, true);
             slot.setBackgroundTexture(GuiTextures.SLOT);
             builder.widget(slot);
         }
-        builder.label(8, 122, "container.patternhatch.circuit", 0xFF55FFFF);
+        builder.widget(new tj.patternhatch.gui.ShadowLabelWidget(8, 122, "container.patternhatch.circuit", 0xFF55FFFF));
         gregtech.api.gui.widgets.SlotWidget circuitSlot = new gregtech.api.gui.widgets.SlotWidget(circuitInventory, 0, 8, 132, true, true);
         circuitSlot.setBackgroundTexture(GuiTextures.SLOT);
         builder.widget(circuitSlot);

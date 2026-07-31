@@ -80,7 +80,7 @@ public class SyncedTextWidget extends Widget {
         Position pos = getPosition();
         for (int i = 0; i < visibleLines && start + i < lines.size(); i++) {
             String line = lines.get(start + i);
-            Minecraft.getMinecraft().fontRenderer.drawString(line, pos.x, pos.y + i * LINE_HEIGHT, 0xFFAAAAAA);
+            Minecraft.getMinecraft().fontRenderer.drawStringWithShadow(line, pos.x, pos.y + i * LINE_HEIGHT, 0xFFFFFFFF);
         }
         // Scroll bar (only when content overflows)
         int linesTotal = lines.size();
