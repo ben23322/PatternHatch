@@ -1,0 +1,15 @@
+{
+  "required": true,
+  "minVersion": "0.7.11",
+  "package": "tj.patternhatch.mixin",
+  "compatibilityLevel": "JAVA_8",
+  "mixins": [
+    "MixinMetaTileEntityHolder",
+    "MixinMultiblockControllerBase",
+    "MixinRecipeMapMultiblockController",
+    "MixinWorkableTieredMetaTileEntity"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

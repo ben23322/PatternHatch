@@ -1,0 +1,18 @@
+[
+  {
+    "modid": "patternhatch",
+    "name": "Pattern Hatch (TJ)",
+    "description": "Pattern-driven input hatch for GTCEu multiblocks: per-slot isolated item/fluid caches, direct AE2 pattern integration.",
+    "version": "${version}",
+    "mcversion": "${mcversion}",
+    "url": "",
+    "authors": ["TJ player + Codex"],
+    "credits": "Textures may be reused from GTNH (GT5-Unofficial, LGPL-3.0).",
+    "dependencies": [
+      "required-after:gregtech",
+      "required-after:appliedenergistics2",
+      "required-after:mixinbooter"
+    ]
+  }
+]
+
