@@ -1,6 +1,6 @@
 # Pattern Hatch (TJ) — 1.12.2 GTCEu 样板仓
 
-给 GTCEu 系 1.12.2 整合包做的“样板仓”：把样板直接塞进仓室，仓室直连 ME 网络，
+专用于 **Technological Journey 1.5 Beta-hot_fix** 整合包（MC 1.12.2 / GTCEu fork + Gregicality fork）的“样板仓”：把样板直接塞进仓室，仓室直连 ME 网络，
 每个样板槽独立隔离缓存（物品 + 流体），多方块机器自动按样板执行配方，
 不再需要每个机器额外挂一个 ME 接口。
 
@@ -63,4 +63,3 @@ gradle --offline --no-daemon reobfJar
 
 - `docs/样板仓-需求与设计.md`
 - `docs/样板仓-实现方案.md`
-
