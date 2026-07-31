@@ -519,13 +519,13 @@ public class MetaTileEntityPatternHatch extends MetaTileEntityMultiblockPart
                 builder.widget(new PatternSlotWidget(patternInventory, row * 9 + col, 8 + col * 18, 16 + row * 18));
             }
         }
-        builder.widget(new tj.patternhatch.gui.ShadowLabelWidget(8, 90, "container.patternhatch.catalysts", 0xFF55FF55));
+        builder.widget(new tj.patternhatch.gui.ShadowLabelWidget(8, 90, "container.patternhatch.catalysts", 0xFFFFFFFF));
         for (int i = 0; i < CATALYST_SLOTS; i++) {
             gregtech.api.gui.widgets.SlotWidget slot = new gregtech.api.gui.widgets.SlotWidget(catalystInventory, i, 8 + i * 18, 100, true, true);
             slot.setBackgroundTexture(GuiTextures.SLOT);
             builder.widget(slot);
         }
-        builder.widget(new tj.patternhatch.gui.ShadowLabelWidget(8, 122, "container.patternhatch.circuit", 0xFF55FFFF));
+        builder.widget(new tj.patternhatch.gui.ShadowLabelWidget(8, 122, "container.patternhatch.circuit", 0xFFFFFFFF));
         gregtech.api.gui.widgets.SlotWidget circuitSlot = new gregtech.api.gui.widgets.SlotWidget(circuitInventory, 0, 8, 132, true, true);
         circuitSlot.setBackgroundTexture(GuiTextures.SLOT);
         builder.widget(circuitSlot);
