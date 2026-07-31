@@ -504,10 +504,9 @@ public class MetaTileEntityPatternHatch extends MetaTileEntityMultiblockPart
         builder.widget(new tj.patternhatch.gui.ShadowLabelWidget(8, 5, "container.patternhatch.pattern_hatch", -1));
         gregtech.api.gui.resources.TextureArea line =
                 gregtech.api.gui.resources.TextureArea.fullImage("patternhatch:textures/gui/line.png");
-        builder.image(7, 13, 162, 1, line);
-        builder.image(7, 89, 162, 1, line);
-        builder.image(7, 13, 1, 77, line);
-        builder.image(168, 13, 1, 77, line);
+        builder.widget(new tj.patternhatch.gui.FilledRectWidget(7, 13, 163, 77, 0xFFFFFFFF));
+        builder.widget(new tj.patternhatch.gui.FilledRectWidget(8, 14, 161, 75, 0xFF8A90A0));
+        builder.widget(new tj.patternhatch.gui.FilledRectWidget(9, 15, 159, 73, 0xFF3D3D47));
         for (int row = 1; row < 4; row++) {
             builder.image(8, 15 + row * 18, 160, 1, line);
         }
