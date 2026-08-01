@@ -255,12 +255,6 @@ public class MetaTileEntityPatternHatch extends MetaTileEntityMultiblockPart
         return MultiblockAbility.IMPORT_ITEMS;
     }
 
-    /** 空输入处理器：只用于结构计数/总线枚举，不向普通输入库存注入缓存内容。 */
-    private static final IItemHandlerModifiable EMPTY_ITEM_HANDLER = new ItemStackHandler(0);
-
-    /** 空流体处理器：同上，用于 IMPORT_FLUIDS 能力计数。 */
-    private static final IMultipleTankHandler EMPTY_FLUID_HANDLER = new FluidTankList(false, new IFluidTank[0]);
-
     @Override
     public void registerAbilities(List<IItemHandlerModifiable> abilityList) {
         // 结构判定只检查 getAbility() 声明的能力，不依赖这里注册的处理器；
@@ -286,10 +280,12 @@ public class MetaTileEntityPatternHatch extends MetaTileEntityMultiblockPart
         } else if (ability == MultiblockAbility.IMPORT_ITEMS) {
             // 计入机器的输入总线列表（busCount/结构检查），让样板仓可以完全替代输入总线；
             // 处理器保持为空，防止手动合成吞掉样板材料。实际喂料走 PatternMachineLogic 活动槽视图。
-            abilityList.add(EMPTY_ITEM_HANDLER);
+            // 注意：必须每次 new 独立实例，ItemHandlerList 不允许同一实例重复出现在一个列表里
+            // （多个样板仓同机时会抛 "Attempted to add item handler ... twice"）。
+            abilityList.add(new ItemStackHandler(0));
         } else if (ability == MultiblockAbility.IMPORT_FLUIDS) {
             // 同上：计入流体输入仓数量，处理器为空，喂料走活动槽流体缓存视图。
-            abilityList.add(EMPTY_FLUID_HANDLER);
+            abilityList.add(new FluidTankList(false, new IFluidTank[0]));
         }
     }
 
