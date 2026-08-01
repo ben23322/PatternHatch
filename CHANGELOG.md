@@ -1,5 +1,13 @@
 # 更新日志
 
+## [0.1.13] - 2026-08-01
+
+### 诊断
+
+- M3 选槽日志增加机器类名、工作台类名、结构状态、workingEnabled、
+  progress/maxProgress，用于确认机器配方逻辑为何不进入搜索（TJ 机器用的是
+  独立的 BasicRecipeLogic，与 GTCEu 的 MultiblockRecipeLogic 不同）
+
 ## [0.1.12] - 2026-08-01
 
 ### 修复/诊断

@@ -113,7 +113,14 @@ public final class PatternMachineLogic {
                         + " recipe=" + (found != null ? found.getOutputs() : "null")
                         + " circuit=" + selected.hatch.getCircuitInventory().getStackInSlot(0)
                         + " energy=" + (rc.getEnergyContainer() != null
-                        ? rc.getEnergyContainer().getEnergyStored() : -1));
+                        ? rc.getEnergyContainer().getEnergyStored() : -1)
+                        + " machine=" + controller.getClass().getSimpleName()
+                        + " workable=" + workable.getClass().getSimpleName()
+                        + " formed=" + rc.isStructureFormed()
+                        + " wEnabled=" + workable.isWorkingEnabled()
+                        + " active=" + workable.isActive()
+                        + " progress=" + workable.getProgress()
+                        + " maxProgress=" + workable.getMaxProgress());
             } catch (Exception ignored) {
                 System.out.println("[PatternHatch] M3 select slot=" + selected.slotIndex);
             }
