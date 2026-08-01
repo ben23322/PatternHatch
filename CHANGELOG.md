@@ -1,5 +1,12 @@
 # 更新日志
 
+## [0.1.38] - 2026-08-01
+
+### 修复（外观/日志噪音）
+
+- 补上缺失的 pattern_hatch_overlay/overlay_front_active.png（样板仓工作状态贴图），
+  消除日志中的 FileNotFound / TEXTURE_ERROR 材质报错
+
 ## [0.1.37] - 2026-08-01
 
 ### 修复（进不去存档 - 第二轮）
