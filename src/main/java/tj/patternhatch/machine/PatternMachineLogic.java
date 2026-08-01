@@ -146,6 +146,15 @@ public final class PatternMachineLogic {
         return original != null ? original : EMPTY_ITEMS;
     }
 
+    /** 诊断辅助：返回当前活动槽视图（无活动槽返回 null）。 */
+    public static IItemHandlerModifiable getActiveInputView(RecipeMapMultiblockController rc) {
+        ActiveSlot active = ACTIVE.get(rc);
+        if (active != null) {
+            return buildItemView(active.hatch, active.slotIndex);
+        }
+        return null;
+    }
+
     /** Mixin 的 getInputFluidInventory 重定向。 */
     public static IMultipleTankHandler getInputFluidInventory(RecipeMapMultiblockController rc, IMultipleTankHandler original) {
         ActiveSlot active = ACTIVE.get(rc);
