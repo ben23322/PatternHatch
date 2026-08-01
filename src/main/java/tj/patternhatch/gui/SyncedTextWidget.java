@@ -6,13 +6,22 @@ import gregtech.api.util.Position;
 import gregtech.api.util.Size;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
 import net.minecraft.network.PacketBuffer;
+import net.minecraft.util.ResourceLocation;
+import net.minecraftforge.fluids.Fluid;
+import net.minecraftforge.fluids.FluidRegistry;
+import net.minecraftforge.fluids.FluidStack;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
 
-/** Server-synced text widget with mouse-wheel scrolling (for cache summaries). */
+/**
+ * Server-synced text widget with mouse-wheel scrolling (for cache summaries).
+ * 服务端同步结构化数据，客户端本地化显示名（跟随客户端语言）。
+ */
 public class SyncedTextWidget extends Widget {
 
     private static final int LINE_HEIGHT = 9;
@@ -96,22 +105,28 @@ public class SyncedTextWidget extends Widget {
         }
     }
 
-    /** Wrap each entry into visual lines that fit the widget width (full names, no truncation). */
+    /** 把结构化条目转成客户端本地化的显示文本（每行一个缓存条目）。 */
     private List<String> wrap(String text) {
         List<String> visual = new ArrayList<>();
         if (text.isEmpty()) {
             return visual;
         }
-        FontRenderer font = Minecraft.getMinecraft().fontRenderer;
-        int maxWidth = getSize().width - 6;
         for (String entry : text.split("\n")) {
             if (entry.isEmpty()) {
                 visual.add("");
                 continue;
             }
+            String localized = localizeEntry(entry);
+            FontRenderer font = Minecraft.getMinecraft().fontRenderer;
+            int maxWidth = getSize().width - 6;
+            if (font.getStringWidth(localized) <= maxWidth) {
+                visual.add(localized);
+                continue;
+            }
+            // 超宽则按字符折行（完整显示，不截断）
             StringBuilder line = new StringBuilder();
-            for (int i = 0; i < entry.length(); i++) {
-                char c = entry.charAt(i);
+            for (int i = 0; i < localized.length(); i++) {
+                char c = localized.charAt(i);
                 if (line.length() > 0 && font.getStringWidth(line.toString() + c) > maxWidth) {
                     visual.add(line.toString());
                     line.setLength(0);
@@ -121,5 +136,27 @@ public class SyncedTextWidget extends Widget {
             visual.add(line.toString());
         }
         return visual;
+    }
+
+    /** 解析服务端结构化条目："I|槽|注册名|damage|数量" 或 "F|槽|流体名|数量"。 */
+    private String localizeEntry(String entry) {
+        String[] parts = entry.split("\\|");
+        if (parts.length >= 5 && parts[0].equals("I")) {
+            Item item = Item.REGISTRY.getObject(new ResourceLocation(parts[2]));
+            if (item != null) {
+                int damage = Integer.parseInt(parts[3]);
+                int count = Integer.parseInt(parts[4]);
+                return parts[1] + ": " + new ItemStack(item, count, damage).getDisplayName()
+                        + " x" + count;
+            }
+        } else if (parts.length >= 4 && parts[0].equals("F")) {
+            Fluid fluid = FluidRegistry.getFluid(parts[2]);
+            if (fluid != null) {
+                int amount = Integer.parseInt(parts[3]);
+                return parts[1] + ": " + new FluidStack(fluid, amount).getLocalizedName()
+                        + " x" + amount;
+            }
+        }
+        return entry;
     }
 }

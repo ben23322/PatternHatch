@@ -183,10 +183,6 @@ public final class PatternMachineLogic {
         if (active != null) {
             return buildItemView(active.hatch, active.slotIndex);
         }
-        if (hasInstalledPatterns(rc)) {
-            // 装有样板：完全隔离，机器只认样板输入，绝不吃普通输入仓/总线的料
-            return EMPTY_ITEMS;
-        }
         // 没有活动槽时回退到机器原有输入（普通输入总线/输入仓），保证手动合成不受样板仓影响
         return original != null ? original : EMPTY_ITEMS;
     }
@@ -206,20 +202,8 @@ public final class PatternMachineLogic {
         if (active != null) {
             return buildFluidView(active.hatch, active.slotIndex);
         }
-        if (hasInstalledPatterns(rc)) {
-            return EMPTY_FLUIDS;
-        }
         // 没有活动槽时回退到机器原有流体输入（普通输入仓），保证手动流体合成可用
         return original != null ? original : EMPTY_FLUIDS;
-    }
-
-    private static boolean hasInstalledPatterns(RecipeMapMultiblockController rc) {
-        for (IPatternHatch hatch : rc.getAbilities(PatternHatchAbilities.PATTERN_HATCH)) {
-            if (hatch.hasPatterns()) {
-                return true;
-            }
-        }
-        return false;
     }
 
     private static IItemHandlerModifiable buildItemView(IPatternHatch hatch, int slotIndex) {

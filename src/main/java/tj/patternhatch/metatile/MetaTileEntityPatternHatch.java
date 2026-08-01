@@ -184,7 +184,7 @@ public class MetaTileEntityPatternHatch extends MetaTileEntityMultiblockPart
     @Override
     public void addInformation(ItemStack stack, World world, List<String> tooltip, boolean advanced) {
         super.addInformation(stack, world, tooltip, advanced);
-        for (int i = 1; i <= 9; i++) {
+        for (int i = 1; i <= 33; i++) {
             String key = "metaitem.patternhatch.pattern_hatch.tooltip." + i;
             String text = I18n.format(key);
             if (!text.equals(key)) {
@@ -738,8 +738,10 @@ public class MetaTileEntityPatternHatch extends MetaTileEntityMultiblockPart
                     if (sb.length() > 0) {
                         sb.append("\n");
                     }
-                    sb.append(entry.getSlotIndex() + 1).append(": ")
-                            .append(stack.getDisplayName()).append("x").append(stack.getCount());
+                    // 结构化数据：客户端负责本地化显示名
+                    sb.append("I|").append(entry.getSlotIndex() + 1).append("|")
+                            .append(stack.getItem().getRegistryName()).append("|")
+                            .append(stack.getItemDamage()).append("|").append(stack.getCount());
                 }
             }
             for (IFluidTank tank : entry.getFluidCache().getTanks()) {
@@ -747,8 +749,9 @@ public class MetaTileEntityPatternHatch extends MetaTileEntityMultiblockPart
                     if (sb.length() > 0) {
                         sb.append("\n");
                     }
-                    sb.append(entry.getSlotIndex() + 1).append(": ")
-                            .append(tank.getFluid().getLocalizedName()).append("x").append(tank.getFluidAmount());
+                    sb.append("F|").append(entry.getSlotIndex() + 1).append("|")
+                            .append(tank.getFluid().getFluid().getName()).append("|")
+                            .append(tank.getFluidAmount());
                 }
             }
         }
