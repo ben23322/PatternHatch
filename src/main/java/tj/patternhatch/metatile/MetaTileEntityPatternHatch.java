@@ -597,7 +597,8 @@ public class MetaTileEntityPatternHatch extends MetaTileEntityMultiblockPart
 
         // Right-hand column showing the full cache summary (items + fluids), synced from the server.
         builder.widget(new SyncedTextWidget(178, 16, 96, 24, this::buildCacheSummaryText));
-        builder.widget(new ClickButtonWidget(178, 132, 90, 14,
+        // "弹回AE"按钮：放在编程电路仓右边
+        builder.widget(new ClickButtonWidget(30, 132, 68, 14,
                 "widget.patternhatch.return_to_ae", data -> returnCacheToAE()));
 
         builder.bindPlayerInventory(entityPlayer.inventory, GuiTextures.SLOT, 8, 156);

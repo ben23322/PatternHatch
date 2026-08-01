@@ -90,8 +90,18 @@ public final class PatternMachineLogic {
                 }
             }
         }
+        ActiveSlot prev = ACTIVE.get(controller);
         if (selected != null) {
             ACTIVE.put(controller, selected);
+            if (prev == null || prev.hatch != selected.hatch || prev.slotIndex != selected.slotIndex) {
+                // 活动槽变化：清掉机器的配方 LRU 缓存并强制重搜，
+                // 否则会命中与活动槽内容匹配的旧配方（如 22x/48x 压缩钢板）导致启动失败
+                try {
+                    workable.previousRecipe.clear();
+                    workable.forceRecipeRecheck();
+                } catch (Exception ignored) {
+                }
+            }
             try {
                 Recipe found = rc.recipeMap.searchRecipe(
                         voltage,
@@ -108,7 +118,14 @@ public final class PatternMachineLogic {
                 System.out.println("[PatternHatch] M3 select slot=" + selected.slotIndex);
             }
         } else {
-            ACTIVE.remove(controller);
+            if (prev != null) {
+                ACTIVE.remove(controller);
+                try {
+                    workable.previousRecipe.clear();
+                    workable.forceRecipeRecheck();
+                } catch (Exception ignored) {
+                }
+            }
         }
     }
 
