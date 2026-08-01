@@ -184,7 +184,7 @@ public class MetaTileEntityPatternHatch extends MetaTileEntityMultiblockPart
     @Override
     public void addInformation(ItemStack stack, World world, List<String> tooltip, boolean advanced) {
         super.addInformation(stack, world, tooltip, advanced);
-        for (int i = 1; i <= 33; i++) {
+        for (int i = 1; i <= 13; i++) {
             String key = "metaitem.patternhatch.pattern_hatch.tooltip." + i;
             String text = I18n.format(key);
             if (!text.equals(key)) {

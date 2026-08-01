@@ -41,10 +41,14 @@ public final class PatternMachineLogic {
 
     private static final Map<MultiblockControllerBase, ActiveSlot> ACTIVE = new IdentityHashMap<>();
     private static final Map<MultiblockControllerBase, Integer> IDLE_TICKS = new IdentityHashMap<>();
+    /** 活动槽保持锁：缓存暂时为空时继续锁住活动槽，防止机器去吃普通总线导致增产。 */
+    private static final Map<MultiblockControllerBase, Integer> HOLD_TICKS = new IdentityHashMap<>();
     private static final IItemHandlerModifiable EMPTY_ITEMS = new ItemStackHandler(0);
     private static final IMultipleTankHandler EMPTY_FLUIDS = new FluidTankList(false, new IFluidTank[0]);
     /** 空闲超过该 tick 数且缓存有残余时，自动弹回 AE（5 秒）。 */
     private static final int IDLE_RETURN_TICKS = 100;
+    /** 活动槽保持锁时长（5 秒）：期间机器只等 AE 推料，不回退到普通输入。 */
+    private static final int HOLD_TICKS_DEFAULT = 100;
 
     private PatternMachineLogic() {
     }
@@ -98,6 +102,7 @@ public final class PatternMachineLogic {
         if (selected != null) {
             ACTIVE.put(controller, selected);
             IDLE_TICKS.put(controller, 0);
+            HOLD_TICKS.put(controller, HOLD_TICKS_DEFAULT);
             if (prev == null || prev.hatch != selected.hatch || prev.slotIndex != selected.slotIndex) {
                 // 活动槽变化：清掉机器的配方 LRU 缓存并强制重搜，
                 // 否则会命中与活动槽内容匹配的旧配方（如 22x/48x 压缩钢板）导致启动失败
@@ -130,48 +135,54 @@ public final class PatternMachineLogic {
                 System.out.println("[PatternHatch] M3 select slot=" + selected.slotIndex);
             }
         } else {
-            if (prev != null) {
-                ACTIVE.remove(controller);
-                try {
-                    workable.previousRecipe.clear();
-                    workable.forceRecipeRecheck();
-                } catch (Exception ignored) {
-                }
-            }
-            // 空闲自动弹回：机器无活动槽且缓存有残余（如 <9 的尾料）时，自动退回 AE
-            int idle = IDLE_TICKS.getOrDefault(controller, 0) + 1;
-            IDLE_TICKS.put(controller, idle);
-            if (idle >= IDLE_RETURN_TICKS) {
-                IDLE_TICKS.put(controller, 0);
-                boolean returned = false;
-                for (IPatternHatch h : hatches) {
-                    if (h.hasCachedItems()) {
-                        h.returnCacheToAE();
-                        returned = true;
+            int hold = HOLD_TICKS.getOrDefault(controller, 0);
+            if (hold > 0) {
+                // 锁住当前活动槽（缓存暂时为空）：机器只等 AE 推下一批，不吃普通总线
+                HOLD_TICKS.put(controller, hold - 1);
+            } else {
+                if (prev != null) {
+                    ACTIVE.remove(controller);
+                    try {
+                        workable.previousRecipe.clear();
+                        workable.forceRecipeRecheck();
+                    } catch (Exception ignored) {
                     }
                 }
-                if (returned) {
-                    System.out.println("[PatternHatch] idle auto-return to AE");
+                // 空闲自动弹回：机器无活动槽且缓存有残余（如 <9 的尾料）时，自动退回 AE
+                int idle = IDLE_TICKS.getOrDefault(controller, 0) + 1;
+                IDLE_TICKS.put(controller, idle);
+                if (idle >= IDLE_RETURN_TICKS) {
+                    IDLE_TICKS.put(controller, 0);
+                    boolean returned = false;
+                    for (IPatternHatch h : hatches) {
+                        if (h.hasCachedItems()) {
+                            h.returnCacheToAE();
+                            returned = true;
+                        }
+                    }
+                    if (returned) {
+                        System.out.println("[PatternHatch] idle auto-return to AE");
+                    }
                 }
-            }
-            // 诊断：无活动槽时打印各样板槽缓存残余，便于核对是否清空
-            if (hatches.size() > 0 && rc.getTimer() % 200 == 0) {
-                StringBuilder sb = new StringBuilder();
-                for (IPatternHatch h : hatches) {
-                    for (PatternSlotEntry e : h.getPatternSlots()) {
-                        int total = 0;
-                        for (int i = 0; i < e.getItemCache().getSlots(); i++) {
-                            if (!e.getItemCache().getStackInSlot(i).isEmpty()) {
-                                total += e.getItemCache().getStackInSlot(i).getCount();
+                // 诊断：无活动槽时打印各样板槽缓存残余，便于核对是否清空
+                if (hatches.size() > 0 && rc.getTimer() % 200 == 0) {
+                    StringBuilder sb = new StringBuilder();
+                    for (IPatternHatch h : hatches) {
+                        for (PatternSlotEntry e : h.getPatternSlots()) {
+                            int total = 0;
+                            for (int i = 0; i < e.getItemCache().getSlots(); i++) {
+                                if (!e.getItemCache().getStackInSlot(i).isEmpty()) {
+                                    total += e.getItemCache().getStackInSlot(i).getCount();
+                                }
+                            }
+                            if (total > 0) {
+                                sb.append("slot").append(e.getSlotIndex()).append("=").append(total).append(" ");
                             }
                         }
-                        if (total > 0) {
-                            sb.append("slot").append(e.getSlotIndex()).append("=").append(total).append(" ");
-                        }
                     }
-                }
-                if (sb.length() > 0) {
-                    System.out.println("[PatternHatch] idle cache leftovers: " + sb);
+                    if (sb.length() > 0) {
+                        System.out.println("[PatternHatch] idle cache leftovers: " + sb);
+                    }
                 }
             }
         }

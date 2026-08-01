@@ -8,37 +8,41 @@ import java.util.List;
 
 /**
  * 把槽缓存摊平成"每叠 ≤ 64"的多槽视图，模拟普通输入总线形态。
- * 切片映射在构造时按源库存快照固定一次：抽取过程中源数量变化不会导致
- * 切片位置移位，避免"一次抽取只抽走一部分、剩余被下一批重复使用"的超产 bug。
+ * 每个切片在构造时按源库存快照记账"剩余可抽取量"（sliceRemaining）：
+ * 模拟抽取与真实抽取都按该记账扣减，与源库存的实时数量解耦。
+ * 这样并行大批量（跨多个切片）抽取时，真实抽取量 === 模拟校验量，
+ * 不会出现"校验 160 通过、实际只抽走 96"导致的漏扣 -> 缓存残余 -> 增产。
  */
 public class FlattenedCacheView implements IItemHandlerModifiable {
 
     private final IItemHandlerModifiable source;
     private final int[] sliceSourceSlot;
-    private final int[] sliceOffset;
+    private final int[] sliceRemaining;
     private final int sliceCount;
 
     public FlattenedCacheView(IItemHandlerModifiable source) {
         this.source = source;
         List<Integer> slots = new ArrayList<>();
-        List<Integer> offsets = new ArrayList<>();
+        List<Integer> remaining = new ArrayList<>();
         for (int i = 0; i < source.getSlots(); i++) {
             ItemStack s = source.getStackInSlot(i);
             if (s.isEmpty()) {
                 continue;
             }
             int count = s.getCount();
-            for (int off = 0; off < count; off += 64) {
+            int off = 0;
+            while (off < count) {
                 slots.add(i);
-                offsets.add(off);
+                remaining.add(Math.min(64, count - off));
+                off += 64;
             }
         }
         this.sliceCount = Math.max(1, slots.size());
         this.sliceSourceSlot = new int[sliceCount];
-        this.sliceOffset = new int[sliceCount];
+        this.sliceRemaining = new int[sliceCount];
         for (int i = 0; i < slots.size(); i++) {
             sliceSourceSlot[i] = slots.get(i);
-            sliceOffset[i] = offsets.get(i);
+            sliceRemaining[i] = remaining.get(i);
         }
     }
 
@@ -52,16 +56,16 @@ public class FlattenedCacheView implements IItemHandlerModifiable {
         if (slot >= sliceCount) {
             return ItemStack.EMPTY;
         }
+        int rem = sliceRemaining[slot];
+        if (rem <= 0) {
+            return ItemStack.EMPTY;
+        }
         ItemStack s = source.getStackInSlot(sliceSourceSlot[slot]);
         if (s.isEmpty()) {
             return ItemStack.EMPTY;
         }
-        int avail = s.getCount() - sliceOffset[slot];
-        if (avail <= 0) {
-            return ItemStack.EMPTY;
-        }
         ItemStack out = s.copy();
-        out.setCount(Math.min(64, avail));
+        out.setCount(Math.min(rem, Math.min(64, s.getCount())));
         return out;
     }
 
@@ -75,18 +79,19 @@ public class FlattenedCacheView implements IItemHandlerModifiable {
         if (slot >= sliceCount || amount <= 0) {
             return ItemStack.EMPTY;
         }
+        int rem = sliceRemaining[slot];
+        if (rem <= 0) {
+            return ItemStack.EMPTY;
+        }
         ItemStack s = source.getStackInSlot(sliceSourceSlot[slot]);
         if (s.isEmpty()) {
             return ItemStack.EMPTY;
         }
-        int avail = s.getCount() - sliceOffset[slot];
-        if (avail <= 0) {
-            return ItemStack.EMPTY;
-        }
-        int take = Math.min(amount, Math.min(64, avail));
+        int take = Math.min(amount, Math.min(rem, Math.min(64, s.getCount())));
         ItemStack out = s.copy();
         out.setCount(take);
         if (!simulate) {
+            sliceRemaining[slot] = rem - take;
             source.extractItem(sliceSourceSlot[slot], take, false);
         }
         return out;
