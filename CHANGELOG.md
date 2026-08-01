@@ -1,5 +1,18 @@
 # 更新日志
 
+## [0.1.4] - 2026-08-01
+
+### 修复（服务端崩溃）
+
+- 修复服务端 tick 循环空指针崩溃：AE2 阻塞模式接口扫描相邻方块时，对普通 GT 机器
+  （`MetaTileEntityHolder`）调用 `getInterfaceDuality()` 返回 null，导致
+  `DualityInterface.isBusy()` 第 1228 行 NPE，服务端秒崩
+- 根因：mixin 让**所有** GT 机器 holder 实现了 `IInterfaceHost`，而普通 GT 机器没有
+  AE proxy（基础 `MetaTileEntity.getProxy()` 返回 null），holder 的
+  `getInterfaceDuality()` 会返回 null
+- 修复：holder 只实现 AE 发现样板所需的最小接口 `ICraftingProvider`，不再被 AE2
+  当成"接口"遍历其邻居，配方发现/下发功能不受影响
+
 ## [0.1.3] - 2026-08-01
 
 ### 外观（GTNH 完全观感）
@@ -46,4 +59,3 @@
 - 多方块机器自动按样板优先级执行，槽位隔离不串料
 - 方块破坏时样板、催化剂、电路、缓存全部掉落
 - 组装机配方（材料数量可经 `config/patternhatch.cfg` 自定义）
-
