@@ -49,7 +49,9 @@ import gregtech.api.render.OrientedOverlayRenderer;
 import gregtech.api.render.OrientedOverlayRenderer.OverlayFace;
 import gregtech.api.render.SimpleCubeRenderer;
 import gregtech.api.render.SimpleSidedCubeRenderer;
+import gregtech.common.gui.widget.GhostCircuitWidget;
 import gregtech.common.metatileentities.electric.multiblockpart.MetaTileEntityMultiblockPart;
+import net.minecraft.client.resources.I18n;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.inventory.InventoryCrafting;
 import net.minecraft.item.ItemStack;
@@ -89,8 +91,8 @@ public class MetaTileEntityPatternHatch extends MetaTileEntityMultiblockPart
         IMultiAbilityProvider, IInterfaceHost {
 
     public static final int PATTERN_SLOTS = 36;
-    public static final int CATALYST_SLOTS = 4;
-    public static final int CIRCUIT_SLOTS = 1;
+    public static final int CATALYST_SLOTS = 9;
+    public static final int CIRCUIT_SLOTS = 2;
 
     private static final ICubeRenderer PATTERN_HATCH_CASING = new SimpleCubeRenderer("machines/pattern_hatch");
     private static final ICubeRenderer PATTERN_HATCH_GTNH_CASING =
@@ -174,6 +176,18 @@ public class MetaTileEntityPatternHatch extends MetaTileEntityMultiblockPart
     @Override
     public MetaTileEntity createMetaTileEntity(MetaTileEntityHolder holder) {
         return new MetaTileEntityPatternHatch(metaTileEntityId, getTier());
+    }
+
+    @Override
+    public void addInformation(ItemStack stack, World world, List<String> tooltip, boolean advanced) {
+        super.addInformation(stack, world, tooltip, advanced);
+        for (int i = 1; i <= 7; i++) {
+            String key = "metaitem.patternhatch.pattern_hatch.tooltip." + i;
+            String text = I18n.format(key);
+            if (!text.equals(key)) {
+                tooltip.add(text);
+            }
+        }
     }
 
     // ---------- IPatternHatch ----------
@@ -375,6 +389,14 @@ public class MetaTileEntityPatternHatch extends MetaTileEntityMultiblockPart
         } catch (Exception ignored) {
         }
         markDirty();
+        int total = 0;
+        for (int i = 0; i < entry.getItemCache().getSlots(); i++) {
+            ItemStack s = entry.getItemCache().getStackInSlot(i);
+            if (!s.isEmpty()) {
+                total += s.getCount();
+            }
+        }
+        System.out.println("[PatternHatch] pushPattern done slot=" + slotIndex + " cacheTotal=" + total);
         return true;
     }
 
@@ -591,14 +613,18 @@ public class MetaTileEntityPatternHatch extends MetaTileEntityMultiblockPart
             builder.widget(slot);
         }
         builder.widget(new tj.patternhatch.gui.ShadowLabelWidget(8, 122, "container.patternhatch.circuit", 0xFFFFFFFF));
-        gregtech.api.gui.widgets.SlotWidget circuitSlot = new gregtech.api.gui.widgets.SlotWidget(circuitInventory, 0, 8, 132, true, true);
-        circuitSlot.setBackgroundTexture(GuiTextures.SLOT);
-        builder.widget(circuitSlot);
+        // 电路槽 0：虚拟电路（GhostCircuitWidget，点击/滚轮调配置，无需放物品）
+        builder.widget(new GhostCircuitWidget(circuitInventory, 8, 132));
+        // 电路槽 1：实体电路（可选，放物品时同样参与匹配）
+        gregtech.api.gui.widgets.SlotWidget circuitSlot1 =
+                new gregtech.api.gui.widgets.SlotWidget(circuitInventory, 1, 26, 132, true, true);
+        circuitSlot1.setBackgroundTexture(GuiTextures.SLOT);
+        builder.widget(circuitSlot1);
 
         // Right-hand column showing the full cache summary (items + fluids), synced from the server.
         builder.widget(new SyncedTextWidget(178, 16, 96, 24, this::buildCacheSummaryText));
-        // "弹回AE"按钮：放在编程电路仓右边
-        builder.widget(new ClickButtonWidget(30, 132, 68, 14,
+        // "弹回AE"按钮：放在两个电路槽右边
+        builder.widget(new ClickButtonWidget(46, 132, 68, 14,
                 "widget.patternhatch.return_to_ae", data -> returnCacheToAE()));
 
         builder.bindPlayerInventory(entityPlayer.inventory, GuiTextures.SLOT, 8, 156);

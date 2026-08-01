@@ -21,7 +21,7 @@ public class TJPatternHatchMod implements ILateMixinLoader {
 
     public static final String MODID = "patternhatch";
     public static final String NAME = "Pattern Hatch (TJ)";
-    public static final String VERSION = "0.1.23";
+    public static final String VERSION = "0.1.24";
 
     @Mod.Instance(MODID)
     public static TJPatternHatchMod instance;
