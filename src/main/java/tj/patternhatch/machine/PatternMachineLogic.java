@@ -25,6 +25,7 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.lang.reflect.Method;
+import java.lang.reflect.Field;
 import tj.patternhatch.util.PatternHatchDebug;
 
 /**
@@ -44,6 +45,14 @@ public final class PatternMachineLogic {
         }
     }
 
+    /** TJ 平行机活动槽状态：用于检测活动槽/配方图/内容变化，决定是否清配方 LRU。 */
+    private static final class TJState {
+        int mapIndex = -1;
+        int slotIndex = -1;
+        Object hatchRef;
+        String contentFingerprint = "";
+    }
+
     private static final Map<MultiblockControllerBase, ActiveSlot> ACTIVE = new IdentityHashMap<>();
     private static final Map<MultiblockControllerBase, Integer> IDLE_TICKS = new IdentityHashMap<>();
     /** 活动槽保持锁：缓存暂时为空时继续锁住活动槽，防止机器去吃普通总线导致增产。 */
@@ -58,6 +67,10 @@ public final class PatternMachineLogic {
     public static boolean TJ_PARALLEL_ENABLED = true;
     /** 反射方法缓存：避免每 tick 每台机器重复 getMethod。 */
     private static final Map<Class<?>, Map<String, Method>> TJ_METHOD_CACHE = new HashMap<>();
+    /** 反射字段缓存（recipeLogic 等 protected 字段）。 */
+    private static final Map<Class<?>, Map<String, Field>> TJ_FIELD_CACHE = new HashMap<>();
+    /** 每台 TJ 平行机的活动槽状态。 */
+    private static final Map<MultiblockControllerBase, TJState> TJ_STATE = new IdentityHashMap<>();
 
     private PatternMachineLogic() {
     }
@@ -251,6 +264,24 @@ public final class PatternMachineLogic {
             ACTIVE.put(controller, selected);
             IDLE_TICKS.put(controller, 0);
             HOLD_TICKS.put(controller, HOLD_TICKS_DEFAULT);
+            // TJ 的 ParallelRecipeLRUCache 按"内容子集匹配"返回最近命中配方：
+            // 活动槽切换、模式（配方图）切换、或槽内材料类型变化时，旧配方可能被
+            // 新内容顺带满足 -> 机器跑旧配方 -> 合成错误。此时清掉 LRU 强制重搜。
+            TJState state = TJ_STATE.computeIfAbsent(controller, k -> new TJState());
+            int mapIndex = getTJMapIndex(controller);
+            String fingerprint = slotContentFingerprint(selected.hatch, selected.slotIndex);
+            boolean stale = state.hatchRef != selected.hatch
+                    || state.slotIndex != selected.slotIndex
+                    || state.mapIndex != mapIndex
+                    || !state.contentFingerprint.equals(fingerprint);
+            state.hatchRef = selected.hatch;
+            state.slotIndex = selected.slotIndex;
+            state.mapIndex = mapIndex;
+            state.contentFingerprint = fingerprint;
+            if (stale) {
+                clearTJRecipeCache(controller);
+                PatternHatchDebug.log("[PatternHatch] TJ recipe LRU cleared (slot/map/content changed)");
+            }
             PatternHatchDebug.log("[PatternHatch] TJ select slot=" + selected.slotIndex
                     + " machine=" + controller.getClass().getSimpleName()
                     + " hatches=" + hatches.size());
@@ -365,6 +396,11 @@ public final class PatternMachineLogic {
         return value instanceof RecipeMap ? (RecipeMap<?>) value : null;
     }
 
+    private static int getTJMapIndex(MultiblockControllerBase controller) {
+        Object value = invokeTJ(controller, "getRecipeMapIndex");
+        return value instanceof Integer ? (Integer) value : -1;
+    }
+
     private static long getTJVoltage(MultiblockControllerBase controller) {
         Object value = invokeTJ(controller, "getInputEnergyContainer");
         return value instanceof IEnergyContainer ? ((IEnergyContainer) value).getInputVoltage() : Long.MAX_VALUE;
@@ -385,6 +421,79 @@ public final class PatternMachineLogic {
                 cache.put(methodName, method);
             }
             return method.invoke(controller);
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
+    /** 活动槽缓存的内容类型指纹：只含物品种类/流体种类，不含数量（消耗中数量变化不触发重搜）。 */
+    private static String slotContentFingerprint(IPatternHatch hatch, int slotIndex) {
+        try {
+            PatternSlotEntry entry = hatch.getPatternSlots().get(slotIndex);
+            java.util.Set<String> types = new java.util.TreeSet<>();
+            for (int i = 0; i < entry.getItemCache().getSlots(); i++) {
+                net.minecraft.item.ItemStack s = entry.getItemCache().getStackInSlot(i);
+                if (!s.isEmpty()) {
+                    types.add("i:" + s.getItem().getRegistryName() + "@" + s.getItemDamage());
+                }
+            }
+            for (net.minecraftforge.fluids.IFluidTank tank : entry.getFluidCache().getTanks()) {
+                net.minecraftforge.fluids.FluidStack f = tank.getFluid();
+                if (f != null) {
+                    types.add("f:" + f.getFluid().getName());
+                }
+            }
+            return types.toString();
+        } catch (Exception ignored) {
+            return "";
+        }
+    }
+
+    /** 反射调用 ParallelRecipeLogic.getRecipeLRUCache().clear()，清掉 TJ 的配方 LRU。 */
+    private static void clearTJRecipeCache(MultiblockControllerBase controller) {
+        try {
+            Class<?> clazz = controller.getClass();
+            Map<String, Field> fieldCache = TJ_FIELD_CACHE.computeIfAbsent(clazz, k -> new HashMap<>());
+            Field recipeLogicField = fieldCache.get("recipeLogic");
+            if (recipeLogicField == null) {
+                Class<?> scan = clazz;
+                while (scan != null) {
+                    try {
+                        recipeLogicField = scan.getDeclaredField("recipeLogic");
+                        break;
+                    } catch (NoSuchFieldException ignored) {
+                        scan = scan.getSuperclass();
+                    }
+                }
+                if (recipeLogicField == null) {
+                    return;
+                }
+                recipeLogicField.setAccessible(true);
+                fieldCache.put("recipeLogic", recipeLogicField);
+            }
+            Object logic = recipeLogicField.get(controller);
+            if (logic == null) {
+                return;
+            }
+            Method getCache = getTJLogicMethod(logic, "getRecipeLRUCache");
+            if (getCache == null) {
+                return;
+            }
+            Object cache = getCache.invoke(logic);
+            if (cache == null) {
+                return;
+            }
+            Method clear = getTJLogicMethod(cache, "clear");
+            if (clear != null) {
+                clear.invoke(cache);
+            }
+        } catch (Exception ignored) {
+        }
+    }
+
+    private static Method getTJLogicMethod(Object target, String methodName) {
+        try {
+            return target.getClass().getMethod(methodName);
         } catch (Exception ignored) {
             return null;
         }
