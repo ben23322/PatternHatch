@@ -1,5 +1,12 @@
 # 更新日志
 
+## [0.1.20] - 2026-08-01
+
+### 修复（启动崩溃）
+
+- 移除 Recipe.matchesFound 探针（该崩溃为 JEI + Java 25 的 fastutil 哈希
+  ArrayIndexOutOfBounds，非 mixin 报错；为排除关联一并移除探针）
+
 ## [0.1.19] - 2026-08-01
 
 ### 诊断（恢复并行）
