@@ -8,6 +8,7 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraftforge.common.config.Configuration;
 import tj.patternhatch.pattern.PatternCacheInventory;
+import tj.patternhatch.metatile.MetaTileEntityPatternHatch;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -48,6 +49,10 @@ public final class PatternHatchRecipes {
                 Integer.MAX_VALUE,
                 "Per-pattern-slot item cache cap: AE stops pushing when the cache reaches this, "
                         + "preventing cache pileup / over-production");
+        MetaTileEntityPatternHatch.BUSY_THRESHOLD = config.getInt("busyThreshold", "cache", 432, 9,
+                Integer.MAX_VALUE,
+                "When one pattern slot's cache reaches this, isBusy() reports busy so the AE crafting CPU "
+                        + "pauses pushing until the machine processes a batch (default one 48x batch = 432)");
         String inputBusOverride = config.getString("hvInputBusItem", "recipe", "",
                 "Override HV input bus item (modid:item:meta@count), empty = default");
         String inputHatchOverride = config.getString("hvInputHatchItem", "recipe", "",

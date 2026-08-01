@@ -94,6 +94,8 @@ public class MetaTileEntityPatternHatch extends MetaTileEntityMultiblockPart
     public static final int PATTERN_SLOTS = 36;
     public static final int CATALYST_SLOTS = 9;
     public static final int CIRCUIT_SLOTS = 2;
+    /** 单槽缓存达到该数量时 isBusy 返回 true，让 AE 合成 CPU 暂停推料（默认一批 48×9）。 */
+    public static int BUSY_THRESHOLD = 432;
 
     private static final ICubeRenderer PATTERN_HATCH_CASING = new SimpleCubeRenderer("machines/pattern_hatch");
     private static final ICubeRenderer PATTERN_HATCH_GTNH_CASING =
@@ -435,6 +437,13 @@ public class MetaTileEntityPatternHatch extends MetaTileEntityMultiblockPart
 
     @Override
     public boolean isBusy() {
+        // 缓存达到一批量时报告忙：AE 合成 CPU 会暂停推料，等机器吃完一批、
+        // 产物回流后再推，防止 CPU 在回流延迟窗口内超前推料导致超产（无中生有）
+        for (PatternSlotEntry entry : patternSlots) {
+            if (entry.getItemCache().getTotalCount() >= BUSY_THRESHOLD) {
+                return true;
+            }
+        }
         return false;
     }
 
