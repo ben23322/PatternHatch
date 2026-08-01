@@ -1,5 +1,14 @@
 # 更新日志
 
+## [0.1.37] - 2026-08-01
+
+### 修复（进不去存档 - 第二轮）
+
+- 修复 "FluidTankList cannot be cast to IFluidTank" 崩溃：IMPORT_FLUIDS 能力表的
+  元素类型是 IFluidTank（流体仓注册的是内部 FluidTank），0.1.36 误注册了
+  FluidTankList 容器，机器成型后配方逻辑按 tank 强转导致崩溃。现在注册
+  0 容量惰性 FluidTank，结构计数有效且完全惰性（不能存任何流体）
+
 ## [0.1.36] - 2026-08-01
 
 ### 修复（进不去存档）

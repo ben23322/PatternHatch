@@ -284,8 +284,9 @@ public class MetaTileEntityPatternHatch extends MetaTileEntityMultiblockPart
             // （多个样板仓同机时会抛 "Attempted to add item handler ... twice"）。
             abilityList.add(new ItemStackHandler(0));
         } else if (ability == MultiblockAbility.IMPORT_FLUIDS) {
-            // 同上：计入流体输入仓数量，处理器为空，喂料走活动槽流体缓存视图。
-            abilityList.add(new FluidTankList(false, new IFluidTank[0]));
+            // 同上：计入流体输入仓数量。注意 IMPORT_FLUIDS 能力表的元素类型是 IFluidTank
+            // （不是 IMultipleTankHandler），注册一个 0 容量惰性罐，既满足结构计数又完全惰性。
+            abilityList.add(new net.minecraftforge.fluids.FluidTank(0));
         }
     }
 
