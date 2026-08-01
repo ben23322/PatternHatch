@@ -1,0 +1,13 @@
+{
+  "required": false,
+  "minVersion": "0.7.11",
+  "package": "tj.patternhatch.mixin",
+  "compatibilityLevel": "JAVA_8",
+  "mixins": [
+    "MixinLargeSimpleNoParallel",
+    "MixinMultiRecipeMapNoParallel"
+  ],
+  "injectors": {
+    "defaultRequire": 0
+  }
+}

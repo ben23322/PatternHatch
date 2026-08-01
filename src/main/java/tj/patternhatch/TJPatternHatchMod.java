@@ -21,7 +21,7 @@ public class TJPatternHatchMod implements ILateMixinLoader {
 
     public static final String MODID = "patternhatch";
     public static final String NAME = "Pattern Hatch (TJ)";
-    public static final String VERSION = "0.1.16";
+    public static final String VERSION = "0.1.17";
 
     @Mod.Instance(MODID)
     public static TJPatternHatchMod instance;
@@ -43,6 +43,7 @@ public class TJPatternHatchMod implements ILateMixinLoader {
 
     @Override
     public List<String> getMixinConfigs() {
-        return Arrays.asList("mixins.patternhatch.json", "mixins.patternhatch.nae2.json");
+        return Arrays.asList("mixins.patternhatch.json", "mixins.patternhatch.nae2.json",
+                "mixins.patternhatch.ga.json");
     }
 }
