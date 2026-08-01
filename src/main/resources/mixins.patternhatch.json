@@ -7,7 +7,9 @@
     "MixinMetaTileEntityHolder",
     "MixinMultiblockControllerBase",
     "MixinRecipeMapMultiblockController",
-    "MixinWorkableTieredMetaTileEntity"
+    "MixinWorkableTieredMetaTileEntity",
+    "MixinAbstractRecipeLogicDebug",
+    "MixinMultiblockRecipeLogicDebug"
   ],
   "injectors": {
     "defaultRequire": 1

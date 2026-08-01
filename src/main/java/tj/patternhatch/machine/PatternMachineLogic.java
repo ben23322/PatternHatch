@@ -100,7 +100,10 @@ public final class PatternMachineLogic {
                         minTank,
                         false);
                 System.out.println("[PatternHatch] M3 select slot=" + selected.slotIndex
-                        + " recipe=" + (found != null ? found.getOutputs() : "null"));
+                        + " recipe=" + (found != null ? found.getOutputs() : "null")
+                        + " circuit=" + selected.hatch.getCircuitInventory().getStackInSlot(0)
+                        + " energy=" + (rc.getEnergyContainer() != null
+                        ? rc.getEnergyContainer().getEnergyStored() : -1));
             } catch (Exception ignored) {
                 System.out.println("[PatternHatch] M3 select slot=" + selected.slotIndex);
             }
