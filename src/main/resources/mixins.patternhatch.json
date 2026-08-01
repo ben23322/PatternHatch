@@ -8,6 +8,7 @@
     "MixinMultiblockControllerBase",
     "MixinRecipeMapMultiblockController",
     "MixinWorkableTieredMetaTileEntity",
+    "MixinMultiblockRecipeLogicInput",
     "MixinAbstractRecipeLogicDebug",
     "MixinMultiblockRecipeLogicDebug"
   ],

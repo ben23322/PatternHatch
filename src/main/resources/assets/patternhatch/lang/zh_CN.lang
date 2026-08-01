@@ -4,3 +4,4 @@ patternhatch.machine.pattern_hatch.name=样板仓
 container.patternhatch.pattern_hatch=样板仓
 container.patternhatch.catalysts=催化剂
 container.patternhatch.circuit=电路
+widget.patternhatch.return_to_ae=弹回AE

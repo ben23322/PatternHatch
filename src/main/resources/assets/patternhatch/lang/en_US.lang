@@ -4,3 +4,4 @@ patternhatch.machine.pattern_hatch.name=Pattern Hatch
 container.patternhatch.pattern_hatch=Pattern Hatch
 container.patternhatch.catalysts=Catalysts
 container.patternhatch.circuit=Circuit
+widget.patternhatch.return_to_ae=Return to AE

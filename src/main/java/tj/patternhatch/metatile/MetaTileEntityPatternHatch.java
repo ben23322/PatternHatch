@@ -5,18 +5,26 @@ import appeng.api.config.Settings;
 import appeng.api.config.Upgrades;
 import appeng.api.networking.GridFlags;
 import appeng.api.networking.IGridNode;
+import appeng.api.networking.IGrid;
 import appeng.api.networking.crafting.ICraftingLink;
 import appeng.api.networking.crafting.ICraftingPatternDetails;
 import appeng.api.networking.crafting.ICraftingProviderHelper;
 import appeng.api.networking.events.MENetworkCraftingPatternChange;
+import appeng.api.networking.storage.IStorageGrid;
+import appeng.api.storage.channels.IFluidStorageChannel;
+import appeng.api.storage.channels.IItemStorageChannel;
 import appeng.api.storage.data.IAEItemStack;
+import appeng.api.storage.data.IAEFluidStack;
 import appeng.api.util.AECableType;
 import appeng.api.util.AEPartLocation;
 import appeng.api.util.IConfigManager;
+import appeng.fluids.util.AEFluidStack;
 import appeng.helpers.DualityInterface;
 import appeng.helpers.IInterfaceHost;
 import appeng.helpers.PatternHelper;
+import appeng.me.helpers.MachineSource;
 import appeng.me.helpers.AENetworkProxy;
+import appeng.util.item.AEItemStack;
 import appeng.parts.automation.UpgradeInventory;
 import appeng.tile.inventory.AppEngInternalInventory;
 import appeng.util.inv.IAEAppEngInventory;
@@ -30,6 +38,7 @@ import com.glodblock.github.util.FluidPatternDetails;
 import com.google.common.collect.ImmutableSet;
 import gregtech.api.gui.GuiTextures;
 import gregtech.api.gui.ModularUI;
+import gregtech.api.gui.widgets.ClickButtonWidget;
 import gregtech.api.metatileentity.MetaTileEntity;
 import gregtech.api.metatileentity.MetaTileEntityHolder;
 import gregtech.api.metatileentity.multiblock.IMultiAbilityProvider;
@@ -588,9 +597,66 @@ public class MetaTileEntityPatternHatch extends MetaTileEntityMultiblockPart
 
         // Right-hand column showing the full cache summary (items + fluids), synced from the server.
         builder.widget(new SyncedTextWidget(178, 16, 96, 24, this::buildCacheSummaryText));
+        builder.widget(new ClickButtonWidget(178, 132, 90, 14,
+                "widget.patternhatch.return_to_ae", data -> returnCacheToAE()));
 
         builder.bindPlayerInventory(entityPlayer.inventory, GuiTextures.SLOT, 8, 156);
         return builder.build(getHolder(), entityPlayer);
+    }
+
+    /**
+     * 把 36 个样板槽的缓存物品/流体全部送回 ME 网络（放不下的留在缓存里），
+     * 避免拆方块时几万物品掉落。
+     */
+    private void returnCacheToAE() {
+        if (getWorld() == null || getWorld().isRemote) {
+            return;
+        }
+        try {
+            IGrid grid = getProxy().getGrid();
+            if (grid == null) {
+                return;
+            }
+            IStorageGrid storage = grid.getCache(IStorageGrid.class);
+            MachineSource source = new MachineSource(getHolder());
+            IItemStorageChannel itemChannel =
+                    appeng.api.AEApi.instance().storage().getStorageChannel(IItemStorageChannel.class);
+            IFluidStorageChannel fluidChannel =
+                    appeng.api.AEApi.instance().storage().getStorageChannel(IFluidStorageChannel.class);
+            long itemTotal = 0;
+            long fluidTotal = 0;
+            for (PatternSlotEntry entry : patternSlots) {
+                for (int i = 0; i < entry.getItemCache().getSlots(); i++) {
+                    ItemStack stack = entry.getItemCache().getStackInSlot(i);
+                    if (stack.isEmpty()) {
+                        continue;
+                    }
+                    IAEItemStack left = storage.getInventory(itemChannel)
+                            .injectItems(AEItemStack.fromItemStack(stack), Actionable.MODULATE, source);
+                    ItemStack remaining = left == null ? ItemStack.EMPTY : left.createItemStack();
+                    itemTotal += stack.getCount() - remaining.getCount();
+                    entry.getItemCache().setStackInSlot(i, remaining);
+                }
+                for (IFluidTank tank : entry.getFluidCache().getTanks()) {
+                    FluidStack fs = tank.getFluid();
+                    if (fs == null || fs.amount <= 0) {
+                        continue;
+                    }
+                    FluidStack before = fs.copy();
+                    IAEFluidStack left = storage.getInventory(fluidChannel)
+                            .injectItems(AEFluidStack.fromFluidStack(before), Actionable.MODULATE, source);
+                    int injected = before.amount - (left == null ? 0 : (int) left.getStackSize());
+                    if (injected > 0) {
+                        tank.drain(injected, true);
+                        fluidTotal += injected;
+                    }
+                }
+            }
+            markDirty();
+            System.out.println("[PatternHatch] return to AE: items=" + itemTotal + " fluids=" + fluidTotal);
+        } catch (Exception e) {
+            System.out.println("[PatternHatch] return to AE failed: " + e);
+        }
     }
 
     private String buildCacheSummaryText() {
