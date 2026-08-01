@@ -207,6 +207,16 @@ public class MetaTileEntityPatternHatch extends MetaTileEntityMultiblockPart
     }
 
     @Override
+    public boolean hasPatterns() {
+        for (int i = 0; i < patternInventory.getSlots(); i++) {
+            if (!patternInventory.getStackInSlot(i).isEmpty()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @Override
     public IItemHandler getCatalystInventory() {
         return catalystInventory;
     }
