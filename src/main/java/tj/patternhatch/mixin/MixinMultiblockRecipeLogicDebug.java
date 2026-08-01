@@ -11,6 +11,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import tj.patternhatch.machine.PatternMachineLogic;
+import tj.patternhatch.util.PatternHatchDebug;
 
 /** 诊断：打印机器 setup 的配方输入与实际视图，跟踪并行消耗与超产。 */
 @Mixin(MultiblockRecipeLogic.class)
@@ -22,12 +23,12 @@ public abstract class MixinMultiblockRecipeLogicDebug {
             MultiblockRecipeLogic logic = (MultiblockRecipeLogic) (Object) this;
             MetaTileEntity mte = logic.getMetaTileEntity();
             String machineClass = mte == null ? "null" : mte.getClass().getSimpleName();
-            System.out.println("[PatternHatch] machine setup HEAD recipe=" + recipe.getOutputs()
+            PatternHatchDebug.log("[PatternHatch] machine setup HEAD recipe=" + recipe.getOutputs()
                     + " machine=" + machineClass
                     + " recipeInputs=" + recipe.getInputs()
                     + " lruCount=" + logic.previousRecipe.getCachedRecipeCount());
         } catch (Exception e) {
-            System.out.println("[PatternHatch] machine setup HEAD log failed: " + e);
+            PatternHatchDebug.log("[PatternHatch] machine setup HEAD log failed: " + e);
         }
     }
 
@@ -57,11 +58,11 @@ public abstract class MixinMultiblockRecipeLogicDebug {
                     viewInfo = " noActiveSlot";
                 }
             }
-            System.out.println("[PatternHatch] machine setupAndConsume -> " + cir.getReturnValue()
+            PatternHatchDebug.log("[PatternHatch] machine setupAndConsume -> " + cir.getReturnValue()
                     + " recipe=" + recipe.getOutputs()
                     + viewInfo);
         } catch (Exception e) {
-            System.out.println("[PatternHatch] machine setup log failed: " + e);
+            PatternHatchDebug.log("[PatternHatch] machine setup log failed: " + e);
         }
     }
 }

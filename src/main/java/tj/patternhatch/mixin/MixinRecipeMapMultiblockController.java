@@ -12,6 +12,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import tj.patternhatch.api.IPatternHatchMachineAccess;
 import tj.patternhatch.machine.PatternMachineLogic;
+import tj.patternhatch.util.PatternHatchDebug;
 
 /** 多方块配方控制器补丁：活动槽视图 + workable 访问。 */
 @Mixin(RecipeMapMultiblockController.class)
@@ -35,7 +36,7 @@ public abstract class MixinRecipeMapMultiblockController implements IPatternHatc
 
     @Inject(method = "checkRecipe", at = @At("HEAD"))
     private void patternhatch$checkRecipe(Recipe recipe, boolean simulate, CallbackInfoReturnable<Boolean> cir) {
-        System.out.println("[PatternHatch] checkRecipe outputs=" + recipe.getOutputs() + " simulate=" + simulate);
+        PatternHatchDebug.log("[PatternHatch] checkRecipe outputs=" + recipe.getOutputs() + " simulate=" + simulate);
     }
 
     @Inject(method = "getInputInventory", at = @At("HEAD"), cancellable = true)

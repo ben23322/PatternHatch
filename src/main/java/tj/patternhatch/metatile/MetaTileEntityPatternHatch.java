@@ -81,6 +81,7 @@ import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.List;
+import tj.patternhatch.util.PatternHatchDebug;
 
 /**
  * Pattern Hatch: a multiblock input part with 36 pattern slots, per-slot isolated
@@ -364,7 +365,7 @@ public class MetaTileEntityPatternHatch extends MetaTileEntityMultiblockPart
                 registered++;
             }
         }
-        System.out.println("[PatternHatch] provideCrafting called, patterns registered=" + registered);
+        PatternHatchDebug.log("[PatternHatch] provideCrafting called, patterns registered=" + registered);
     }
 
     @Override
@@ -381,7 +382,7 @@ public class MetaTileEntityPatternHatch extends MetaTileEntityMultiblockPart
         if (slotIndex < 0) {
             return false;
         }
-        System.out.println("[PatternHatch] pushPattern slot=" + slotIndex);
+        PatternHatchDebug.log("[PatternHatch] pushPattern slot=" + slotIndex);
         PatternSlotEntry entry = patternSlots[slotIndex];
         for (int i = 0; i < craftingInv.getSizeInventory(); i++) {
             ItemStack input = craftingInv.getStackInSlot(i);
@@ -392,14 +393,14 @@ public class MetaTileEntityPatternHatch extends MetaTileEntityMultiblockPart
                 Object unpacked = FakeItemRegister.getStack(input);
                 if (unpacked instanceof FluidStack) {
                     entry.getFluidCache().fill((FluidStack) unpacked, true);
-                    System.out.println("[PatternHatch] pushPattern fluid=" + ((FluidStack) unpacked).getFluid().getName()
+                    PatternHatchDebug.log("[PatternHatch] pushPattern fluid=" + ((FluidStack) unpacked).getFluid().getName()
                             + " x" + ((FluidStack) unpacked).amount);
                 }
             } else {
-                System.out.println("[PatternHatch] pushPattern item=" + input.getItem().getRegistryName() + " x" + input.getCount());
+                PatternHatchDebug.log("[PatternHatch] pushPattern item=" + input.getItem().getRegistryName() + " x" + input.getCount());
                 if (entry.getItemCache().getTotalCount() + input.getCount() > PatternCacheInventory.CACHE_ITEM_CAP) {
                     // 缓存已达上限：拒绝本次投递，AE 会稍后重试，避免缓存无限堆积导致超产
-                    System.out.println("[PatternHatch] pushPattern cache cap reached, rejected slot=" + slotIndex);
+                    PatternHatchDebug.log("[PatternHatch] pushPattern cache cap reached, rejected slot=" + slotIndex);
                     return false;
                 }
                 entry.getItemCache().forceInsert(input);
@@ -431,7 +432,7 @@ public class MetaTileEntityPatternHatch extends MetaTileEntityMultiblockPart
                 total += s.getCount();
             }
         }
-        System.out.println("[PatternHatch] pushPattern done slot=" + slotIndex + " cacheTotal=" + total);
+        PatternHatchDebug.log("[PatternHatch] pushPattern done slot=" + slotIndex + " cacheTotal=" + total);
         return true;
     }
 
@@ -572,14 +573,14 @@ public class MetaTileEntityPatternHatch extends MetaTileEntityMultiblockPart
     private void logPatternDetails(ICraftingPatternDetails details, String tag) {
         try {
             if (details != null && details.getPattern() != null && details.getPattern().getTagCompound() != null) {
-                System.out.println("[PatternHatch] pattern " + tag + " nbt=" + details.getPattern().getTagCompound());
+                PatternHatchDebug.log("[PatternHatch] pattern " + tag + " nbt=" + details.getPattern().getTagCompound());
             }
             StringBuilder sb = new StringBuilder("[PatternHatch] pattern " + tag + " class="
                     + details.getClass().getSimpleName() + " inputs=");
             appendStackSummary(sb, details.getCondensedInputs());
             sb.append(" outputs=");
             appendStackSummary(sb, details.getCondensedOutputs());
-            System.out.println(sb);
+            PatternHatchDebug.log(sb.toString());
         } catch (Exception ignored) {
         }
     }
@@ -723,9 +724,9 @@ public class MetaTileEntityPatternHatch extends MetaTileEntityMultiblockPart
                 }
             }
             markDirty();
-            System.out.println("[PatternHatch] return to AE: items=" + itemTotal + " fluids=" + fluidTotal);
+            PatternHatchDebug.log("[PatternHatch] return to AE: items=" + itemTotal + " fluids=" + fluidTotal);
         } catch (Exception e) {
-            System.out.println("[PatternHatch] return to AE failed: " + e);
+            PatternHatchDebug.log("[PatternHatch] return to AE failed: " + e);
         }
     }
 

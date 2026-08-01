@@ -20,6 +20,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import tj.patternhatch.metatile.MetaTileEntityPatternHatch;
+import tj.patternhatch.util.PatternHatchDebug;
 
 /**
  * NAE2 多功能样板工具（Pattern Multi-Tool）兼容：
@@ -57,7 +58,7 @@ public abstract class MixinToolPatternMultiTool {
         int guiId = GuiBridge.PATTERN_MULTI_TOOL.ordinal() << 4 | AEPartLocation.INTERNAL.ordinal() | (1 << 3);
         player.openGui(NAE2.instance, guiId, world, pos.getX(), pos.getY(), pos.getZ());
         player.swingArm(hand);
-        System.out.println("[PatternHatch] NAE2 tool: opened PMT gui on pattern hatch at " + pos);
+        PatternHatchDebug.log("[PatternHatch] NAE2 tool: opened PMT gui on pattern hatch at " + pos);
         cir.setReturnValue(EnumActionResult.SUCCESS);
     }
 
@@ -76,7 +77,7 @@ public abstract class MixinToolPatternMultiTool {
         }
         ObjPatternMultiTool obj = new ObjPatternMultiTool(is);
         obj.setInterface(hatch);
-        System.out.println("[PatternHatch] NAE2 tool: bound interface host (pattern hatch) at " + bp);
+        PatternHatchDebug.log("[PatternHatch] NAE2 tool: bound interface host (pattern hatch) at " + bp);
         cir.setReturnValue(obj);
     }
 }

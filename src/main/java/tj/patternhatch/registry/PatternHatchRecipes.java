@@ -9,6 +9,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraftforge.common.config.Configuration;
 import tj.patternhatch.pattern.PatternCacheInventory;
 import tj.patternhatch.metatile.MetaTileEntityPatternHatch;
+import tj.patternhatch.util.PatternHatchDebug;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -27,6 +28,8 @@ public final class PatternHatchRecipes {
     public static void register(File configDir) {
         Configuration config = new Configuration(new File(configDir, "patternhatch.cfg"));
         config.load();
+        PatternHatchDebug.enabled = config.getBoolean("enabled", "debug", false,
+                "Print [PatternHatch] debug logs to the console (default off)");
         boolean enabled = config.getBoolean("enabled", "recipe", true,
                 "Register the assembler recipe for the Pattern Hatch");
         int outputCount = config.getInt("outputCount", "recipe", 2, 1, 64,
@@ -84,13 +87,13 @@ public final class PatternHatchRecipes {
                 AEApi.instance().definitions().blocks().fluidIface().maybeStack(1)
                         .orElseGet(() -> new ItemStack(Item.getByNameOrId("appliedenergistics2:fluid_interface"))));
 
-        if (bus.isEmpty()) System.out.println("[PatternHatch] missing ingredient: HV input bus");
-        if (hatch.isEmpty()) System.out.println("[PatternHatch] missing ingredient: HV fluid input hatch");
-        if (cardStack.isEmpty()) System.out.println("[PatternHatch] missing ingredient: Pattern Capacity Card");
-        if (meIfaceStack.isEmpty()) System.out.println("[PatternHatch] missing ingredient: ME Interface");
-        if (fluidIfaceStack.isEmpty()) System.out.println("[PatternHatch] missing ingredient: Fluid Interface");
+        if (bus.isEmpty()) PatternHatchDebug.warn("[PatternHatch] missing ingredient: HV input bus");
+        if (hatch.isEmpty()) PatternHatchDebug.warn("[PatternHatch] missing ingredient: HV fluid input hatch");
+        if (cardStack.isEmpty()) PatternHatchDebug.warn("[PatternHatch] missing ingredient: Pattern Capacity Card");
+        if (meIfaceStack.isEmpty()) PatternHatchDebug.warn("[PatternHatch] missing ingredient: ME Interface");
+        if (fluidIfaceStack.isEmpty()) PatternHatchDebug.warn("[PatternHatch] missing ingredient: Fluid Interface");
         if (bus.isEmpty() || hatch.isEmpty() || cardStack.isEmpty() || meIfaceStack.isEmpty() || fluidIfaceStack.isEmpty()) {
-            System.out.println("[PatternHatch] assembler recipe skipped: missing ingredient");
+            PatternHatchDebug.warn("[PatternHatch] assembler recipe skipped: missing ingredient");
             return;
         }
 
@@ -101,7 +104,7 @@ public final class PatternHatchRecipes {
         add(inputs, meIfaceStack, meIface);
         add(inputs, fluidIfaceStack, fluidIface);
         if (inputs.isEmpty() || inputs.size() > 9) {
-            System.out.println("[PatternHatch] assembler recipe skipped: input count " + inputs.size()
+            PatternHatchDebug.warn("[PatternHatch] assembler recipe skipped: input count " + inputs.size()
                     + " must be 1..9 (see config)");
             return;
         }
@@ -112,7 +115,7 @@ public final class PatternHatchRecipes {
                 .duration(duration)
                 .EUt(eut)
                 .buildAndRegister();
-        System.out.println("[PatternHatch] assembler recipe registered, inputs=" + inputs.size());
+        PatternHatchDebug.log("[PatternHatch] assembler recipe registered, inputs=" + inputs.size());
     }
 
     private static void add(List<ItemStack> list, ItemStack stack, int count) {

@@ -1,5 +1,28 @@
 # 更新日志
 
+## [0.1.33] - 2026-08-01
+
+### 修复（服务器）
+
+- 新增 `debug.enabled` 配置（默认 false）：所有 `[PatternHatch]` 调试日志
+  （machine setup / pushPattern / M3 select / checkRecipe 等）默认关闭，
+  不再在服务器控制台刷屏；重要警告（缺材料、缓存丢弃）仍会打印。
+  需要排查问题时在 config/patternhatch.cfg 中把 `debug:enabled` 改为 true
+- 新增 TJ 平行机崩溃保护（MixinTJMultiblockControllerBase）：
+  TJ 的平行化学反应釜等在 distinct 模式下，结构里没有任何输入总线时
+  （例如输入总线位置放了样板仓等无输入总线能力的部件），TJ 的
+  getInputBus(0) 会直接抛 IndexOutOfBoundsException 崩服。
+  现在空列表时返回空物品处理器，机器安静等待输入而不崩溃。
+  注：崩溃栈中没有任何 patternhatch 代码——TJ 控制器不继承
+  RecipeMapMultiblockController，样板仓的 mixin 在 TJ 机器上不生效，
+  此崩溃是 TJ 自身的空列表未保护问题，本补丁仅做防御
+
+### 外观
+
+- tooltip 重写：标题改为 `IV 样板输入总成`（IV 深蓝 §1、名称水蓝 §b），
+  正文按新文案展示（为多方块机器提供物品/流体输入、直接对接 ME 网络、
+  【特性说明】三项，破折号蓝色、标题金色）
+
 ## [0.1.32] - 2026-08-01
 
 ### 修复（并行增产/残余的真正根因）

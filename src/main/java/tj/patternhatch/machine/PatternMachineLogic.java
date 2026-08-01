@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
+import tj.patternhatch.util.PatternHatchDebug;
 
 /**
  * M3 每槽隔离：机器空闲时按样板优先级挑选一个“活动槽”，
@@ -119,7 +120,7 @@ public final class PatternMachineLogic {
                         buildFluidView(selected.hatch, selected.slotIndex),
                         minTank,
                         false);
-                System.out.println("[PatternHatch] M3 select slot=" + selected.slotIndex
+                PatternHatchDebug.log("[PatternHatch] M3 select slot=" + selected.slotIndex
                         + " recipe=" + (found != null ? found.getOutputs() : "null")
                         + " circuit=" + selected.hatch.getCircuitInventory().getStackInSlot(0)
                         + " energy=" + (rc.getEnergyContainer() != null
@@ -132,7 +133,7 @@ public final class PatternMachineLogic {
                         + " progress=" + workable.getProgress()
                         + " maxProgress=" + workable.getMaxProgress());
             } catch (Exception ignored) {
-                System.out.println("[PatternHatch] M3 select slot=" + selected.slotIndex);
+                PatternHatchDebug.log("[PatternHatch] M3 select slot=" + selected.slotIndex);
             }
         } else {
             int hold = HOLD_TICKS.getOrDefault(controller, 0);
@@ -161,7 +162,7 @@ public final class PatternMachineLogic {
                         }
                     }
                     if (returned) {
-                        System.out.println("[PatternHatch] idle auto-return to AE");
+                        PatternHatchDebug.log("[PatternHatch] idle auto-return to AE");
                     }
                 }
                 // 诊断：无活动槽时打印各样板槽缓存残余，便于核对是否清空
@@ -181,7 +182,7 @@ public final class PatternMachineLogic {
                         }
                     }
                     if (sb.length() > 0) {
-                        System.out.println("[PatternHatch] idle cache leftovers: " + sb);
+                        PatternHatchDebug.log("[PatternHatch] idle cache leftovers: " + sb);
                     }
                 }
             }

@@ -2,6 +2,7 @@ package tj.patternhatch.pattern;
 
 import net.minecraft.item.ItemStack;
 import net.minecraftforge.items.ItemStackHandler;
+import tj.patternhatch.util.PatternHatchDebug;
 
 /** 单个样板槽的物品隔离缓存：单格堆叠上限为 1.12.2 上限（int max）。 */
 public class PatternCacheInventory extends ItemStackHandler {
@@ -55,6 +56,6 @@ public class PatternCacheInventory extends ItemStackHandler {
             }
         }
         // 缓存已满：M2 决策（丢弃/回流），先打印日志标记
-        System.out.println("[PatternHatch] item cache full, dropped " + copy);
+        PatternHatchDebug.warn("[PatternHatch] item cache full, dropped " + copy);
     }
 }
