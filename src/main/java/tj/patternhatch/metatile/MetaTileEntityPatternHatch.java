@@ -94,8 +94,8 @@ public class MetaTileEntityPatternHatch extends MetaTileEntityMultiblockPart
     public static final int PATTERN_SLOTS = 36;
     public static final int CATALYST_SLOTS = 9;
     public static final int CIRCUIT_SLOTS = 2;
-    /** 单槽缓存达到该数量时 isBusy 返回 true，让 AE 合成 CPU 暂停推料（默认一批 48×9）。 */
-    public static int BUSY_THRESHOLD = 432;
+    /** 单槽缓存达到该数量时 isBusy 返回 true，让 AE 合成 CPU 暂停推料（默认最大=不门控）。 */
+    public static int BUSY_THRESHOLD = Integer.MAX_VALUE;
 
     private static final ICubeRenderer PATTERN_HATCH_CASING = new SimpleCubeRenderer("machines/pattern_hatch");
     private static final ICubeRenderer PATTERN_HATCH_GTNH_CASING =

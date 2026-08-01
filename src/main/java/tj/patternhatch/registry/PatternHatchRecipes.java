@@ -49,7 +49,7 @@ public final class PatternHatchRecipes {
                 Integer.MAX_VALUE,
                 "Per-pattern-slot item cache cap: AE stops pushing when the cache reaches this, "
                         + "preventing cache pileup / over-production");
-        MetaTileEntityPatternHatch.BUSY_THRESHOLD = config.getInt("busyThreshold", "cache", 432, 9,
+        MetaTileEntityPatternHatch.BUSY_THRESHOLD = config.getInt("busyThreshold", "cache", Integer.MAX_VALUE, 9,
                 Integer.MAX_VALUE,
                 "When one pattern slot's cache reaches this, isBusy() reports busy so the AE crafting CPU "
                         + "pauses pushing until the machine processes a batch (default one 48x batch = 432)");
