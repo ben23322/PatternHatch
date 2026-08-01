@@ -6,7 +6,6 @@ import gregtech.api.metatileentity.MetaTileEntity;
 import gregtech.api.metatileentity.multiblock.RecipeMapMultiblockController;
 import net.minecraftforge.items.IItemHandlerModifiable;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
@@ -21,21 +20,20 @@ import tj.patternhatch.machine.PatternMachineLogic;
 @Mixin(MultiblockRecipeLogic.class)
 public abstract class MixinMultiblockRecipeLogicInput {
 
-    @Shadow
-    protected MetaTileEntity metaTileEntity;
-
     @Inject(method = "getInputInventory", at = @At("HEAD"), cancellable = true)
     private void patternhatch$getInputInventory(CallbackInfoReturnable<IItemHandlerModifiable> cir) {
-        if (metaTileEntity instanceof RecipeMapMultiblockController) {
-            RecipeMapMultiblockController rc = (RecipeMapMultiblockController) metaTileEntity;
+        MetaTileEntity mte = ((MultiblockRecipeLogic) (Object) this).getMetaTileEntity();
+        if (mte instanceof RecipeMapMultiblockController) {
+            RecipeMapMultiblockController rc = (RecipeMapMultiblockController) mte;
             cir.setReturnValue(PatternMachineLogic.getInputInventory(rc, rc.getInputInventory()));
         }
     }
 
     @Inject(method = "getInputTank", at = @At("HEAD"), cancellable = true)
     private void patternhatch$getInputTank(CallbackInfoReturnable<IMultipleTankHandler> cir) {
-        if (metaTileEntity instanceof RecipeMapMultiblockController) {
-            RecipeMapMultiblockController rc = (RecipeMapMultiblockController) metaTileEntity;
+        MetaTileEntity mte = ((MultiblockRecipeLogic) (Object) this).getMetaTileEntity();
+        if (mte instanceof RecipeMapMultiblockController) {
+            RecipeMapMultiblockController rc = (RecipeMapMultiblockController) mte;
             cir.setReturnValue(PatternMachineLogic.getInputFluidInventory(rc, rc.getInputFluidInventory()));
         }
     }

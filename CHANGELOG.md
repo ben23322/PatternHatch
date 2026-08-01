@@ -1,5 +1,14 @@
 # 更新日志
 
+## [0.1.11] - 2026-08-01
+
+### 修复（启动崩溃）
+
+- 修复游戏无法启动：`MixinMultiblockRecipeLogicInput` 之前用 `@Shadow` 定位
+  继承自父类 `MTETrait` 的 `metaTileEntity` 字段，Mixin 无法解析继承字段导致
+  `MultiblockRecipeLogic` 类加载失败、GT 崩溃。已改用公开的
+  `getMetaTileEntity()` 访问器
+
 ## [0.1.10] - 2026-08-01
 
 ### 修复（配方不启动）
