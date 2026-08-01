@@ -14,6 +14,7 @@ import net.minecraftforge.items.ItemStackHandler;
 import tj.patternhatch.api.IPatternHatch;
 import tj.patternhatch.api.IPatternHatchMachineAccess;
 import tj.patternhatch.api.PatternHatchAbilities;
+import tj.patternhatch.pattern.FlattenedCacheView;
 import tj.patternhatch.pattern.PatternSlotEntry;
 
 import java.util.ArrayList;
@@ -167,7 +168,8 @@ public final class PatternMachineLogic {
 
     private static IItemHandlerModifiable buildItemView(IPatternHatch hatch, int slotIndex) {
         List<IItemHandler> handlers = new ArrayList<>();
-        handlers.add(hatch.getPatternSlots().get(slotIndex).getItemCache());
+        // 摊平成 ≤64 一叠的多槽视图，模拟普通输入总线（并行机对单槽大叠处理异常）
+        handlers.add(new FlattenedCacheView(hatch.getPatternSlots().get(slotIndex).getItemCache()));
         handlers.add(hatch.getCatalystInventory());
         handlers.add(hatch.getCircuitInventory());
         return new ItemHandlerList(handlers);

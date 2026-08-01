@@ -9,9 +9,7 @@
     "MixinRecipeMapMultiblockController",
     "MixinWorkableTieredMetaTileEntity",
     "MixinMultiblockRecipeLogicInput",
-    "MixinRecipeMatchesFoundDebug",
-    "MixinAbstractRecipeLogicDebug",
-    "MixinMultiblockRecipeLogicDebug"
+    "MixinMultiblockRecipeLogicInput"
   ],
   "injectors": {
     "defaultRequire": 1
