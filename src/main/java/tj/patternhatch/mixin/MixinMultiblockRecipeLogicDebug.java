@@ -21,18 +21,9 @@ public abstract class MixinMultiblockRecipeLogicDebug {
         try {
             MultiblockRecipeLogic logic = (MultiblockRecipeLogic) (Object) this;
             MetaTileEntity mte = logic.getMetaTileEntity();
-            boolean checkRecipe = false;
             String machineClass = mte == null ? "null" : mte.getClass().getSimpleName();
-            if (mte instanceof RecipeMapMultiblockController) {
-                try {
-                    checkRecipe = ((RecipeMapMultiblockController) mte).checkRecipe(recipe, false);
-                } catch (Exception e) {
-                    checkRecipe = false;
-                }
-            }
             System.out.println("[PatternHatch] machine setup HEAD recipe=" + recipe.getOutputs()
                     + " machine=" + machineClass
-                    + " checkRecipe=" + checkRecipe
                     + " lruCount=" + logic.previousRecipe.getCachedRecipeCount());
         } catch (Exception e) {
             System.out.println("[PatternHatch] machine setup HEAD log failed: " + e);

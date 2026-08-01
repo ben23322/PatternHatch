@@ -24,4 +24,11 @@ public abstract class MixinAbstractRecipeLogicDebug {
                 + " inputSlots=" + (inputs != null ? inputs.getSlots() : -1)
                 + " fluidTanks=" + (fluidInputs != null ? fluidInputs.getTanks() : -1));
     }
+
+    @Inject(method = "setupAndConsumeRecipeInputs", at = @At("RETURN"))
+    private void patternhatch$logSuperSetup(Recipe recipe, CallbackInfoReturnable<Boolean> cir) {
+        System.out.println("[PatternHatch] super.setupAndConsume -> " + cir.getReturnValue()
+                + " recipe=" + recipe.getOutputs()
+                + " EUt=" + recipe.getEUt() + " dur=" + recipe.getDuration());
+    }
 }

@@ -1,5 +1,14 @@
 # 更新日志
 
+## [0.1.15] - 2026-08-01
+
+### 诊断
+
+- 分层日志：区分失败发生在 `MultiblockRecipeLogic.setupAndConsumeRecipeInputs`
+  （checkRecipe 层）还是 `AbstractRecipeLogic`（能量/消耗层）：
+  新增 `super.setupAndConsume -> true/false` 日志；移除诊断中对 checkRecipe
+  的自调用（避免副作用干扰）
+
 ## [0.1.14] - 2026-08-01
 
 ### 诊断
