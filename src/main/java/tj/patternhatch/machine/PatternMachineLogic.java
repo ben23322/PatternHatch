@@ -57,7 +57,13 @@ public final class PatternMachineLogic {
             return;
         }
         MultiblockRecipeLogic workable = ((IPatternHatchMachineAccess) rc).patternhatch$getWorkable();
-        if (workable == null || workable.isActive() || !workable.isWorkingEnabled()) {
+        if (workable == null) {
+            return;
+        }
+        // 编程电路（NBT Configuration）配方的“优化哈希查找”不可靠（MapItemStackIngredient 忽略 NBT），
+        // 样板仓模式下强制用与 onTick 相同的线性查找，否则带电路的配方机器不识别。
+        workable.setUseOptimizedRecipeLookUp(false);
+        if (workable.isActive() || !workable.isWorkingEnabled()) {
             return; // 加工中或停用：保持当前活动槽不变
         }
         long voltage = rc.getEnergyContainer() != null ? rc.getEnergyContainer().getInputVoltage() : Long.MAX_VALUE;
@@ -86,7 +92,18 @@ public final class PatternMachineLogic {
         }
         if (selected != null) {
             ACTIVE.put(controller, selected);
-            System.out.println("[PatternHatch] M3 select slot=" + selected.slotIndex);
+            try {
+                Recipe found = rc.recipeMap.searchRecipe(
+                        voltage,
+                        buildItemView(selected.hatch, selected.slotIndex),
+                        buildFluidView(selected.hatch, selected.slotIndex),
+                        minTank,
+                        false);
+                System.out.println("[PatternHatch] M3 select slot=" + selected.slotIndex
+                        + " recipe=" + (found != null ? found.getOutputs() : "null"));
+            } catch (Exception ignored) {
+                System.out.println("[PatternHatch] M3 select slot=" + selected.slotIndex);
+            }
         } else {
             ACTIVE.remove(controller);
         }
