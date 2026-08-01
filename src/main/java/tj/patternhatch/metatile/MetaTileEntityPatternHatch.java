@@ -70,6 +70,7 @@ import tj.patternhatch.api.IPatternHatch;
 import tj.patternhatch.api.PatternHatchAbilities;
 import tj.patternhatch.gui.PatternSlotWidget;
 import tj.patternhatch.gui.SyncedTextWidget;
+import tj.patternhatch.pattern.PatternCacheInventory;
 import tj.patternhatch.pattern.PatternSlotEntry;
 
 import codechicken.lib.render.CCRenderState;
@@ -181,7 +182,7 @@ public class MetaTileEntityPatternHatch extends MetaTileEntityMultiblockPart
     @Override
     public void addInformation(ItemStack stack, World world, List<String> tooltip, boolean advanced) {
         super.addInformation(stack, world, tooltip, advanced);
-        for (int i = 1; i <= 7; i++) {
+        for (int i = 1; i <= 9; i++) {
             String key = "metaitem.patternhatch.pattern_hatch.tooltip." + i;
             String text = I18n.format(key);
             if (!text.equals(key)) {
@@ -367,6 +368,11 @@ public class MetaTileEntityPatternHatch extends MetaTileEntityMultiblockPart
                 }
             } else {
                 System.out.println("[PatternHatch] pushPattern item=" + input.getItem().getRegistryName() + " x" + input.getCount());
+                if (entry.getItemCache().getTotalCount() + input.getCount() > PatternCacheInventory.CACHE_ITEM_CAP) {
+                    // 缓存已达上限：拒绝本次投递，AE 会稍后重试，避免缓存无限堆积导致超产
+                    System.out.println("[PatternHatch] pushPattern cache cap reached, rejected slot=" + slotIndex);
+                    return false;
+                }
                 entry.getItemCache().forceInsert(input);
             }
         }
@@ -635,7 +641,8 @@ public class MetaTileEntityPatternHatch extends MetaTileEntityMultiblockPart
      * 把 36 个样板槽的缓存物品/流体全部送回 ME 网络（放不下的留在缓存里），
      * 避免拆方块时几万物品掉落。
      */
-    private void returnCacheToAE() {
+    @Override
+    public void returnCacheToAE() {
         if (getWorld() == null || getWorld().isRemote) {
             return;
         }

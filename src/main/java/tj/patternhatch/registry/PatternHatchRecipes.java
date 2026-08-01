@@ -7,6 +7,7 @@ import gregtech.common.metatileentities.MetaTileEntities;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraftforge.common.config.Configuration;
+import tj.patternhatch.pattern.PatternCacheInventory;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -43,6 +44,10 @@ public final class PatternHatchRecipes {
                 "Count of ME Interfaces");
         int fluidIface = config.getInt("fluidInterfaceCount", "recipe", 1, 0, 9,
                 "Count of Fluid Interfaces");
+        PatternCacheInventory.CACHE_ITEM_CAP = config.getInt("cacheCapItems", "cache", 1000, 9,
+                Integer.MAX_VALUE,
+                "Per-pattern-slot item cache cap: AE stops pushing when the cache reaches this, "
+                        + "preventing cache pileup / over-production");
         String inputBusOverride = config.getString("hvInputBusItem", "recipe", "",
                 "Override HV input bus item (modid:item:meta@count), empty = default");
         String inputHatchOverride = config.getString("hvInputHatchItem", "recipe", "",

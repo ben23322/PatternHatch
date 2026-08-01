@@ -7,6 +7,20 @@ import net.minecraftforge.items.ItemStackHandler;
 public class PatternCacheInventory extends ItemStackHandler {
 
     public static final int DEFAULT_SLOTS = 9;
+    /** 单个样板槽物品缓存总量上限：防止 AE 无限推料导致缓存堆积/超产。cfg 可调。 */
+    public static int CACHE_ITEM_CAP = 1000;
+
+    /** 当前缓存内物品总数。 */
+    public int getTotalCount() {
+        int total = 0;
+        for (int i = 0; i < getSlots(); i++) {
+            ItemStack s = getStackInSlot(i);
+            if (!s.isEmpty()) {
+                total += s.getCount();
+            }
+        }
+        return total;
+    }
 
     public PatternCacheInventory() {
         this(DEFAULT_SLOTS);
@@ -44,4 +58,3 @@ public class PatternCacheInventory extends ItemStackHandler {
         System.out.println("[PatternHatch] item cache full, dropped " + copy);
     }
 }
-

@@ -15,5 +15,7 @@ public interface IPatternHatch {
     IItemHandler getCircuitInventory();
 
     void markDirty();
-}
 
+    /** 把全部样板槽缓存送回 ME 网络（放不下的留在缓存）。 */
+    void returnCacheToAE();
+}

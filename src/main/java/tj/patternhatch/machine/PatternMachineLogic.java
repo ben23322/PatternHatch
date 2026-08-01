@@ -134,6 +134,26 @@ public final class PatternMachineLogic {
                 } catch (Exception ignored) {
                 }
             }
+            // 诊断：无活动槽时打印各样板槽缓存残余，便于核对是否清空
+            if (hatches.size() > 0 && rc.getTimer() % 200 == 0) {
+                StringBuilder sb = new StringBuilder();
+                for (IPatternHatch h : hatches) {
+                    for (PatternSlotEntry e : h.getPatternSlots()) {
+                        int total = 0;
+                        for (int i = 0; i < e.getItemCache().getSlots(); i++) {
+                            if (!e.getItemCache().getStackInSlot(i).isEmpty()) {
+                                total += e.getItemCache().getStackInSlot(i).getCount();
+                            }
+                        }
+                        if (total > 0) {
+                            sb.append("slot").append(e.getSlotIndex()).append("=").append(total).append(" ");
+                        }
+                    }
+                }
+                if (sb.length() > 0) {
+                    System.out.println("[PatternHatch] idle cache leftovers: " + sb);
+                }
+            }
         }
     }
 
