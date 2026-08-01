@@ -44,7 +44,7 @@ public final class PatternHatchRecipes {
                 "Count of ME Interfaces");
         int fluidIface = config.getInt("fluidInterfaceCount", "recipe", 1, 0, 9,
                 "Count of Fluid Interfaces");
-        PatternCacheInventory.CACHE_ITEM_CAP = config.getInt("cacheCapItems", "cache", 1000, 9,
+        PatternCacheInventory.CACHE_ITEM_CAP = config.getInt("cacheCapItems", "cache", Integer.MAX_VALUE, 9,
                 Integer.MAX_VALUE,
                 "Per-pattern-slot item cache cap: AE stops pushing when the cache reaches this, "
                         + "preventing cache pileup / over-production");

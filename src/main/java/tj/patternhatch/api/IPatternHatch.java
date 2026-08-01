@@ -19,6 +19,9 @@ public interface IPatternHatch {
     /** 是否装有至少一个样板（用于"完全隔离"判断：有样板就不回退到普通输入）。 */
     boolean hasPatterns();
 
+    /** 是否有缓存残余（物品或流体，用于空闲自动弹回）。 */
+    boolean hasCachedItems();
+
     /** 把全部样板槽缓存送回 ME 网络（放不下的留在缓存）。 */
     void returnCacheToAE();
 }

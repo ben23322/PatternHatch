@@ -40,8 +40,11 @@ public final class PatternMachineLogic {
     }
 
     private static final Map<MultiblockControllerBase, ActiveSlot> ACTIVE = new IdentityHashMap<>();
+    private static final Map<MultiblockControllerBase, Integer> IDLE_TICKS = new IdentityHashMap<>();
     private static final IItemHandlerModifiable EMPTY_ITEMS = new ItemStackHandler(0);
     private static final IMultipleTankHandler EMPTY_FLUIDS = new FluidTankList(false, new IFluidTank[0]);
+    /** 空闲超过该 tick 数且缓存有残余时，自动弹回 AE（5 秒）。 */
+    private static final int IDLE_RETURN_TICKS = 100;
 
     private PatternMachineLogic() {
     }
@@ -94,6 +97,7 @@ public final class PatternMachineLogic {
         ActiveSlot prev = ACTIVE.get(controller);
         if (selected != null) {
             ACTIVE.put(controller, selected);
+            IDLE_TICKS.put(controller, 0);
             if (prev == null || prev.hatch != selected.hatch || prev.slotIndex != selected.slotIndex) {
                 // 活动槽变化：清掉机器的配方 LRU 缓存并强制重搜，
                 // 否则会命中与活动槽内容匹配的旧配方（如 22x/48x 压缩钢板）导致启动失败
@@ -132,6 +136,22 @@ public final class PatternMachineLogic {
                     workable.previousRecipe.clear();
                     workable.forceRecipeRecheck();
                 } catch (Exception ignored) {
+                }
+            }
+            // 空闲自动弹回：机器无活动槽且缓存有残余（如 <9 的尾料）时，自动退回 AE
+            int idle = IDLE_TICKS.getOrDefault(controller, 0) + 1;
+            IDLE_TICKS.put(controller, idle);
+            if (idle >= IDLE_RETURN_TICKS) {
+                IDLE_TICKS.put(controller, 0);
+                boolean returned = false;
+                for (IPatternHatch h : hatches) {
+                    if (h.hasCachedItems()) {
+                        h.returnCacheToAE();
+                        returned = true;
+                    }
+                }
+                if (returned) {
+                    System.out.println("[PatternHatch] idle auto-return to AE");
                 }
             }
             // 诊断：无活动槽时打印各样板槽缓存残余，便于核对是否清空

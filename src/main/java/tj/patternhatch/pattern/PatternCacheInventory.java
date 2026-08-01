@@ -8,7 +8,7 @@ public class PatternCacheInventory extends ItemStackHandler {
 
     public static final int DEFAULT_SLOTS = 9;
     /** 单个样板槽物品缓存总量上限：防止 AE 无限推料导致缓存堆积/超产。cfg 可调。 */
-    public static int CACHE_ITEM_CAP = 1000;
+    public static int CACHE_ITEM_CAP = Integer.MAX_VALUE;
 
     /** 当前缓存内物品总数。 */
     public int getTotalCount() {

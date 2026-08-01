@@ -217,6 +217,23 @@ public class MetaTileEntityPatternHatch extends MetaTileEntityMultiblockPart
     }
 
     @Override
+    public boolean hasCachedItems() {
+        for (PatternSlotEntry entry : patternSlots) {
+            for (int i = 0; i < entry.getItemCache().getSlots(); i++) {
+                if (!entry.getItemCache().getStackInSlot(i).isEmpty()) {
+                    return true;
+                }
+            }
+            for (IFluidTank tank : entry.getFluidCache().getTanks()) {
+                if (tank.getFluid() != null && tank.getFluidAmount() > 0) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    @Override
     public IItemHandler getCatalystInventory() {
         return catalystInventory;
     }
