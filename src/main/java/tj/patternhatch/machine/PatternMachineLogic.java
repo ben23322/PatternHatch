@@ -1,12 +1,14 @@
 package tj.patternhatch.machine;
 
 import gregtech.api.capability.IMultipleTankHandler;
+import gregtech.api.capability.IEnergyContainer;
 import gregtech.api.capability.impl.FluidTankList;
 import gregtech.api.capability.impl.ItemHandlerList;
 import gregtech.api.capability.impl.MultiblockRecipeLogic;
 import gregtech.api.metatileentity.multiblock.MultiblockControllerBase;
 import gregtech.api.metatileentity.multiblock.RecipeMapMultiblockController;
 import gregtech.api.recipes.Recipe;
+import gregtech.api.recipes.RecipeMap;
 import net.minecraftforge.fluids.IFluidTank;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.IItemHandlerModifiable;
@@ -18,9 +20,11 @@ import tj.patternhatch.pattern.FlattenedCacheView;
 import tj.patternhatch.pattern.PatternSlotEntry;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
+import java.lang.reflect.Method;
 import tj.patternhatch.util.PatternHatchDebug;
 
 /**
@@ -50,16 +54,26 @@ public final class PatternMachineLogic {
     private static final int IDLE_RETURN_TICKS = 100;
     /** 活动槽保持锁时长（5 秒）：期间机器只等 AE 推料，不回退到普通输入。 */
     private static final int HOLD_TICKS_DEFAULT = 100;
+    /** TJ 平行机样板仓支持开关（config: tjParallel.enabled），默认开启。 */
+    public static boolean TJ_PARALLEL_ENABLED = true;
+    /** 反射方法缓存：避免每 tick 每台机器重复 getMethod。 */
+    private static final Map<Class<?>, Map<String, Method>> TJ_METHOD_CACHE = new HashMap<>();
 
     private PatternMachineLogic() {
     }
 
-    /** 每 tick 由 Mixin 调用：空闲时选择下一个可执行槽位。 */
+    /** 每 tick 由 Mixin 调用：空闲时选择下一个可执行槽位（GTCEu 系 + TJ 平行机双支持）。 */
     public static void onTick(MultiblockControllerBase controller) {
-        if (!(controller instanceof RecipeMapMultiblockController)) {
-            return;
+        if (controller instanceof RecipeMapMultiblockController) {
+            onTickGTCEu((RecipeMapMultiblockController) controller);
+        } else {
+            onTickTJ(controller);
         }
-        RecipeMapMultiblockController rc = (RecipeMapMultiblockController) controller;
+    }
+
+    /** GTCEu 系多方块：RecipeMapMultiblockController 活动槽选择。 */
+    private static void onTickGTCEu(RecipeMapMultiblockController rc) {
+        MultiblockControllerBase controller = rc;
         List<IPatternHatch> hatches = rc.getAbilities(PatternHatchAbilities.PATTERN_HATCH);
         if (hatches.isEmpty()) {
             ACTIVE.remove(controller);
@@ -189,6 +203,84 @@ public final class PatternMachineLogic {
         }
     }
 
+    /** TJ 平行机（ParallelRecipeMapMultiblockController 等，不继承 RecipeMapMultiblockController）。 */
+    private static void onTickTJ(MultiblockControllerBase controller) {
+        if (!TJ_PARALLEL_ENABLED) {
+            return;
+        }
+        List<IPatternHatch> hatches = controller.getAbilities(PatternHatchAbilities.PATTERN_HATCH);
+        if (hatches.isEmpty()) {
+            ACTIVE.remove(controller);
+            IDLE_TICKS.remove(controller);
+            HOLD_TICKS.remove(controller);
+            return;
+        }
+        if (isTJActive(controller) || !isTJWorkingEnabled(controller)) {
+            return; // 加工中或停用：保持当前活动槽不变（hold 冻结，防缓存空档期吃普通总线）
+        }
+        RecipeMap<?> recipeMap = getTJRecipeMap(controller);
+        if (recipeMap == null) {
+            return;
+        }
+        long voltage = getTJVoltage(controller);
+        int minTank = minTankCapacity(getTJExportFluidTank(controller));
+        ActiveSlot selected = null;
+        outer:
+        for (IPatternHatch hatch : hatches) {
+            for (PatternSlotEntry entry : hatch.getPatternSlots()) {
+                if (isSlotEmpty(hatch, entry.getSlotIndex())) {
+                    continue;
+                }
+                try {
+                    Recipe recipe = recipeMap.searchRecipe(
+                            voltage,
+                            buildItemView(hatch, entry.getSlotIndex()),
+                            buildFluidView(hatch, entry.getSlotIndex()),
+                            minTank,
+                            false);
+                    if (recipe != null) {
+                        selected = new ActiveSlot(hatch, entry.getSlotIndex());
+                        break outer;
+                    }
+                } catch (Exception ignored) {
+                }
+            }
+        }
+        ActiveSlot prev = ACTIVE.get(controller);
+        if (selected != null) {
+            ACTIVE.put(controller, selected);
+            IDLE_TICKS.put(controller, 0);
+            HOLD_TICKS.put(controller, HOLD_TICKS_DEFAULT);
+            PatternHatchDebug.log("[PatternHatch] TJ select slot=" + selected.slotIndex
+                    + " machine=" + controller.getClass().getSimpleName()
+                    + " hatches=" + hatches.size());
+        } else {
+            int hold = HOLD_TICKS.getOrDefault(controller, 0);
+            if (hold > 0) {
+                HOLD_TICKS.put(controller, hold - 1);
+            } else {
+                if (prev != null) {
+                    ACTIVE.remove(controller);
+                }
+                int idle = IDLE_TICKS.getOrDefault(controller, 0) + 1;
+                IDLE_TICKS.put(controller, idle);
+                if (idle >= IDLE_RETURN_TICKS) {
+                    IDLE_TICKS.put(controller, 0);
+                    boolean returned = false;
+                    for (IPatternHatch h : hatches) {
+                        if (h.hasCachedItems()) {
+                            h.returnCacheToAE();
+                            returned = true;
+                        }
+                    }
+                    if (returned) {
+                        PatternHatchDebug.log("[PatternHatch] TJ idle auto-return to AE");
+                    }
+                }
+            }
+        }
+    }
+
     /** Mixin 的 getInputInventory 重定向：有活动槽用该槽视图，有样板仓但无可执行槽用空视图。 */
     public static IItemHandlerModifiable getInputInventory(RecipeMapMultiblockController rc, IItemHandlerModifiable original) {
         ActiveSlot active = ACTIVE.get(rc);
@@ -216,6 +308,86 @@ public final class PatternMachineLogic {
         }
         // 没有活动槽时回退到机器原有流体输入（普通输入仓），保证手动流体合成可用
         return original != null ? original : EMPTY_FLUIDS;
+    }
+
+    // ---------- TJ 平行机输入重定向 ----------
+
+    /** TJ getImportItemInventory 重定向：有活动槽用该槽视图，空闲回退原合并输入。 */
+    public static IItemHandlerModifiable getTJInputInventory(MultiblockControllerBase controller, IItemHandlerModifiable original) {
+        if (!TJ_PARALLEL_ENABLED) {
+            return original != null ? original : EMPTY_ITEMS;
+        }
+        ActiveSlot active = ACTIVE.get(controller);
+        if (active != null) {
+            return buildItemView(active.hatch, active.slotIndex);
+        }
+        return original != null ? original : EMPTY_ITEMS;
+    }
+
+    /** TJ getInputBus 重定向：有活动槽时任何总线索引都返回活动槽视图（distinct 也走样板），空闲回退原总线。 */
+    public static IItemHandlerModifiable getTJInputBus(MultiblockControllerBase controller, int index, IItemHandlerModifiable original) {
+        if (!TJ_PARALLEL_ENABLED) {
+            return original != null ? original : EMPTY_ITEMS;
+        }
+        ActiveSlot active = ACTIVE.get(controller);
+        if (active != null) {
+            return buildItemView(active.hatch, active.slotIndex);
+        }
+        return original != null ? original : EMPTY_ITEMS;
+    }
+
+    /** TJ getImportFluidTank 重定向：有活动槽用该槽流体缓存视图，空闲回退原合并流体。 */
+    public static IMultipleTankHandler getTJInputFluidInventory(MultiblockControllerBase controller, IMultipleTankHandler original) {
+        if (!TJ_PARALLEL_ENABLED) {
+            return original != null ? original : EMPTY_FLUIDS;
+        }
+        ActiveSlot active = ACTIVE.get(controller);
+        if (active != null) {
+            return buildFluidView(active.hatch, active.slotIndex);
+        }
+        return original != null ? original : EMPTY_FLUIDS;
+    }
+
+    // ---------- TJ 反射辅助（TJ 类不在编译 classpath，运行时按方法名取） ----------
+
+    private static boolean isTJActive(MultiblockControllerBase controller) {
+        Object value = invokeTJ(controller, "isActive");
+        return value instanceof Boolean && (Boolean) value;
+    }
+
+    private static boolean isTJWorkingEnabled(MultiblockControllerBase controller) {
+        Object value = invokeTJ(controller, "isWorkingEnabled");
+        return !(value instanceof Boolean) || (Boolean) value;
+    }
+
+    private static RecipeMap<?> getTJRecipeMap(MultiblockControllerBase controller) {
+        Object value = invokeTJ(controller, "getRecipeMap");
+        return value instanceof RecipeMap ? (RecipeMap<?>) value : null;
+    }
+
+    private static long getTJVoltage(MultiblockControllerBase controller) {
+        Object value = invokeTJ(controller, "getInputEnergyContainer");
+        return value instanceof IEnergyContainer ? ((IEnergyContainer) value).getInputVoltage() : Long.MAX_VALUE;
+    }
+
+    private static IMultipleTankHandler getTJExportFluidTank(MultiblockControllerBase controller) {
+        Object value = invokeTJ(controller, "getExportFluidTank");
+        return value instanceof IMultipleTankHandler ? (IMultipleTankHandler) value : null;
+    }
+
+    private static Object invokeTJ(MultiblockControllerBase controller, String methodName) {
+        try {
+            Class<?> clazz = controller.getClass();
+            Map<String, Method> cache = TJ_METHOD_CACHE.computeIfAbsent(clazz, k -> new HashMap<>());
+            Method method = cache.get(methodName);
+            if (method == null) {
+                method = clazz.getMethod(methodName);
+                cache.put(methodName, method);
+            }
+            return method.invoke(controller);
+        } catch (Exception ignored) {
+            return null;
+        }
     }
 
     private static IItemHandlerModifiable buildItemView(IPatternHatch hatch, int slotIndex) {

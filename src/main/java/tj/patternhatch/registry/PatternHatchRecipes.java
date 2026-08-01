@@ -7,6 +7,7 @@ import gregtech.common.metatileentities.MetaTileEntities;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraftforge.common.config.Configuration;
+import tj.patternhatch.machine.PatternMachineLogic;
 import tj.patternhatch.pattern.PatternCacheInventory;
 import tj.patternhatch.metatile.MetaTileEntityPatternHatch;
 import tj.patternhatch.util.PatternHatchDebug;
@@ -30,6 +31,8 @@ public final class PatternHatchRecipes {
         config.load();
         PatternHatchDebug.enabled = config.getBoolean("enabled", "debug", false,
                 "Print [PatternHatch] debug logs to the console (default off)");
+        PatternMachineLogic.TJ_PARALLEL_ENABLED = config.getBoolean("enabled", "tjParallel", true,
+                "Enable pattern-hatch support for TJ parallel machines (default on)");
         boolean enabled = config.getBoolean("enabled", "recipe", true,
                 "Register the assembler recipe for the Pattern Hatch");
         int outputCount = config.getInt("outputCount", "recipe", 2, 1, 64,

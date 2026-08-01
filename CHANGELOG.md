@@ -1,5 +1,21 @@
 # 更新日志
 
+## [0.1.35] - 2026-08-01
+
+### 新功能：TJ 平行机样板仓支持（P0）
+
+- 样板仓现在可以**完全替代输入总线/输入仓**放进 TJ 平行机（28 台平行机结构通用槽位，
+  无需再留真总线）：registerAbilityFor 把空物品/流体处理器登记进 IMPORT_ITEMS /
+  IMPORT_FLUIDS 能力表，结构检查与 busCount 均计入样板仓
+- PatternMachineLogic 新增 TJ 分支：TJ 平行机空闲时按 36 槽优先级选活动槽，
+  复用现有摊平缓存视图 + 切片记账（并行不漏扣/不增产）+ 催化剂 + 虚拟电路
+- 三个 TJ 输入口子重定向：getImportItemInventory / getImportFluidTank /
+  getInputBus 在有活动样板槽时返回该槽视图（distinct 也走样板），空闲回退原输入，
+  手动合成照旧；保留 5 秒活动槽保持锁与空闲自动弹回 AE
+- 配置开关：config/patternhatch.cfg -> tjParallel.enabled（默认 true），
+  出问题可一键关闭 TJ 支持
+- 保留全部崩溃防护（getInputBus 越界、distinct 无总线自动关闭）
+
 ## [0.1.34] - 2026-08-01
 
 ### 修复（TJ 平行机崩服 - 第二轮）
