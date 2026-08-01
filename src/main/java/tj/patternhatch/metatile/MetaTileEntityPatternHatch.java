@@ -17,6 +17,9 @@ import appeng.helpers.DualityInterface;
 import appeng.helpers.IInterfaceHost;
 import appeng.helpers.PatternHelper;
 import appeng.me.helpers.AENetworkProxy;
+import appeng.parts.automation.UpgradeInventory;
+import appeng.util.inv.IAEAppEngInventory;
+import appeng.util.inv.InvOperation;
 import com.glodblock.github.common.item.ItemFluidCraftEncodedPattern;
 import com.glodblock.github.common.item.ItemFluidEncodedPattern;
 import com.glodblock.github.common.item.ItemFluidPacket;
@@ -24,13 +27,11 @@ import com.glodblock.github.common.item.fake.FakeItemRegister;
 import com.glodblock.github.util.FluidCraftingPatternDetails;
 import com.glodblock.github.util.FluidPatternDetails;
 import com.google.common.collect.ImmutableSet;
-import gregtech.api.capability.impl.ItemHandlerList;
 import gregtech.api.gui.GuiTextures;
 import gregtech.api.gui.ModularUI;
 import gregtech.api.metatileentity.MetaTileEntity;
 import gregtech.api.metatileentity.MetaTileEntityHolder;
 import gregtech.api.metatileentity.multiblock.IMultiAbilityProvider;
-import gregtech.api.metatileentity.multiblock.IMultiblockAbilityPart;
 import gregtech.api.metatileentity.multiblock.MultiblockAbility;
 import gregtech.api.render.ICubeRenderer;
 import gregtech.api.render.OrientedOverlayRenderer;
@@ -73,7 +74,7 @@ import java.util.List;
  * AE2 (item + ae2fc fluid patterns) and feeds the host machine via abilities.
  */
 public class MetaTileEntityPatternHatch extends MetaTileEntityMultiblockPart
-        implements IPatternHatch, IMultiblockAbilityPart<IItemHandlerModifiable>, IMultiAbilityProvider, IInterfaceHost {
+        implements IPatternHatch, IMultiAbilityProvider, IInterfaceHost {
 
     public static final int PATTERN_SLOTS = 36;
     public static final int CATALYST_SLOTS = 4;
@@ -96,8 +97,12 @@ public class MetaTileEntityPatternHatch extends MetaTileEntityMultiblockPart
     private final PatternSlotEntry[] patternSlots = new PatternSlotEntry[PATTERN_SLOTS];
     private final ItemStackHandler catalystInventory = new ItemStackHandler(CATALYST_SLOTS);
     private final ItemStackHandler circuitInventory = new ItemStackHandler(CIRCUIT_SLOTS);
+    /**
+     * 供 NAE2 多功能样板工具展示用的“升级仓”：固定报告 3 个样板扩展，
+     * 让工具的接口视图解锁全部 4 行（36 槽），且不显示可编辑的升级槽。
+     */
+    private final UpgradeInventory naeUpgradeInventory = new PatternHatchUpgradeInventory();
 
-    private IItemHandlerModifiable mergedItemView;
     private DualityInterface dualityInterface;
     private AENetworkProxy aeProxy;
 
@@ -173,52 +178,19 @@ public class MetaTileEntityPatternHatch extends MetaTileEntityMultiblockPart
     // ---------- Multiblock abilities ----------
 
     @Override
-    public MultiblockAbility<IItemHandlerModifiable> getAbility() {
-        return MultiblockAbility.IMPORT_ITEMS;
-    }
-
-    @Override
-    public void registerAbilities(List<IItemHandlerModifiable> abilityList) {
-        abilityList.add(getMergedItemView());
-    }
-
-    @Override
     public MultiblockAbility<?>[] getAbilities() {
-        // This fork only collects abilities via IMultiAbilityProvider, so all three must be here.
-        return new MultiblockAbility<?>[]{
-                MultiblockAbility.IMPORT_ITEMS,
-                MultiblockAbility.IMPORT_FLUIDS,
-                PatternHatchAbilities.PATTERN_HATCH};
+        // 只注册 PATTERN_HATCH 能力用于活动槽调度；
+        // 绝不把缓存注册成 IMPORT_ITEMS/IMPORT_FLUIDS，否则会把 36 槽缓存混进机器
+        // 的普通输入库存（导致手动合成会吞掉样板缓存材料）。
+        return new MultiblockAbility<?>[]{PatternHatchAbilities.PATTERN_HATCH};
     }
 
     @Override
     @SuppressWarnings("unchecked")
     public void registerAbilityFor(MultiblockAbility<?> ability, List<Object> abilityList) {
-        if (ability == MultiblockAbility.IMPORT_ITEMS) {
-            abilityList.add(getMergedItemView());
-        } else if (ability == MultiblockAbility.IMPORT_FLUIDS) {
-            // One tank per fluid so GT recipe matching sees every fluid separately.
-            for (PatternSlotEntry entry : patternSlots) {
-                for (IFluidTank tank : entry.getFluidCache().getTanks()) {
-                    abilityList.add(tank);
-                }
-            }
-        } else if (ability == PatternHatchAbilities.PATTERN_HATCH) {
+        if (ability == PatternHatchAbilities.PATTERN_HATCH) {
             abilityList.add(this);
         }
-    }
-
-    private IItemHandlerModifiable getMergedItemView() {
-        if (mergedItemView == null) {
-            List<IItemHandler> handlers = new ArrayList<>();
-            for (PatternSlotEntry entry : patternSlots) {
-                handlers.add(entry.getItemCache());
-            }
-            handlers.add(catalystInventory);
-            handlers.add(circuitInventory);
-            mergedItemView = new ItemHandlerList(handlers);
-        }
-        return mergedItemView;
     }
 
     public EnumSet<EnumFacing> getConnectableSides() {
@@ -429,7 +401,43 @@ public class MetaTileEntityPatternHatch extends MetaTileEntityMultiblockPart
 
     @Override
     public IItemHandler getInventoryByName(String name) {
+        if ("patterns".equals(name)) {
+            return patternInventory;
+        }
+        if ("upgrades".equals(name)) {
+            return naeUpgradeInventory;
+        }
         return null;
+    }
+
+    /**
+     * 给 NAE2 多功能样板工具用的“接口升级仓”：固定视作已安装 3 个样板扩展，
+     * 使接口视图的 4 行（36 槽）全部可用；槽位为 0，GUI 不显示可编辑升级槽。
+     */
+    private static final class PatternHatchUpgradeInventory extends UpgradeInventory {
+
+        PatternHatchUpgradeInventory() {
+            super(new IAEAppEngInventory() {
+                @Override
+                public void saveChanges() {
+                }
+
+                @Override
+                public void onChangeInventory(IItemHandler inv, int slot, InvOperation mc,
+                                              ItemStack removedStack, ItemStack newStack) {
+                }
+            }, 0);
+        }
+
+        @Override
+        public int getMaxInstalled(Upgrades upgrades) {
+            return 0;
+        }
+
+        @Override
+        public int getInstalledUpgrades(Upgrades upgrades) {
+            return upgrades == Upgrades.PATTERN_EXPANSION ? 3 : 0;
+        }
     }
 
     private void syncPatternsToDuality() {

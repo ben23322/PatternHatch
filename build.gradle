@@ -11,7 +11,7 @@ buildscript {
 
 apply plugin: "net.minecraftforge.gradle"
 
-version = "0.1.4"
+version = "0.1.5"
 group = "tj.patternhatch"
 archivesBaseName = "patternhatch"
 
@@ -32,6 +32,7 @@ dependencies {
         "$tjMods/gregicality_tj_fork-0.26.2-hotfix.jar",
         "$tjMods/ae2-uel-v0.56.7.jar",
         "$tjMods/ae2fc-2.7.10-unofficial.jar",
+        "$tjMods/nae2-1.6.4.jar",
         "$tjMods/!mixinbooter-10.7.jar",
         "$tjMods/CodeChickenLib-1.12.2-3.2.3.358-universal.jar",
     )

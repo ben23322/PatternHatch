@@ -8,7 +8,7 @@ import tj.patternhatch.registry.PatternHatchRecipes;
 import zone.rong.mixinbooter.ILateMixinLoader;
 
 import java.io.File;
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 
 @Mod(
@@ -21,7 +21,7 @@ public class TJPatternHatchMod implements ILateMixinLoader {
 
     public static final String MODID = "patternhatch";
     public static final String NAME = "Pattern Hatch (TJ)";
-    public static final String VERSION = "0.1.3";
+    public static final String VERSION = "0.1.5";
 
     @Mod.Instance(MODID)
     public static TJPatternHatchMod instance;
@@ -43,6 +43,6 @@ public class TJPatternHatchMod implements ILateMixinLoader {
 
     @Override
     public List<String> getMixinConfigs() {
-        return Collections.singletonList("mixins.patternhatch.json");
+        return Arrays.asList("mixins.patternhatch.json", "mixins.patternhatch.nae2.json");
     }
 }

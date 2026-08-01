@@ -98,10 +98,7 @@ public final class PatternMachineLogic {
         if (active != null) {
             return buildItemView(active.hatch, active.slotIndex);
         }
-        if (!rc.getAbilities(PatternHatchAbilities.PATTERN_HATCH).isEmpty()) {
-            return EMPTY_ITEMS;
-        }
-        // 永不让机器拿到 null 输入（JEI 虚拟机器等场景 inputInventory 字段为 null）
+        // 没有活动槽时回退到机器原有输入（普通输入总线/输入仓），保证手动合成不受样板仓影响
         return original != null ? original : EMPTY_ITEMS;
     }
 
@@ -111,9 +108,7 @@ public final class PatternMachineLogic {
         if (active != null) {
             return buildFluidView(active.hatch, active.slotIndex);
         }
-        if (!rc.getAbilities(PatternHatchAbilities.PATTERN_HATCH).isEmpty()) {
-            return EMPTY_FLUIDS;
-        }
+        // 没有活动槽时回退到机器原有流体输入（普通输入仓），保证手动流体合成可用
         return original != null ? original : EMPTY_FLUIDS;
     }
 
