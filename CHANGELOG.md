@@ -1,5 +1,16 @@
 # 更新日志
 
+## [0.1.6] - 2026-08-01
+
+### 修复
+
+- 修复：装上样板仓后多方块结构无法成型。TJ fork 的结构判定
+  （`abilityPartPredicate`）只认 `IMultiblockAbilityPart.getAbility()`，
+  样板仓已恢复该接口声明（仅声明能力，不把缓存注入机器普通输入，保持不串料）
+- 修复：NAE2 多功能样板工具在接口视图下按按钮导致服务端
+  `ClassCastException` 崩溃、左侧样板区无内容。样板库存改用 AE2
+  `AppEngInternalInventory`（36 槽 × 每槽 1 个），与 AE 接口样板槽语义一致
+
 ## [0.1.5] - 2026-08-01
 
 ### 修复（普通机器不能合成）

@@ -18,6 +18,7 @@ import appeng.helpers.IInterfaceHost;
 import appeng.helpers.PatternHelper;
 import appeng.me.helpers.AENetworkProxy;
 import appeng.parts.automation.UpgradeInventory;
+import appeng.tile.inventory.AppEngInternalInventory;
 import appeng.util.inv.IAEAppEngInventory;
 import appeng.util.inv.InvOperation;
 import com.glodblock.github.common.item.ItemFluidCraftEncodedPattern;
@@ -32,6 +33,7 @@ import gregtech.api.gui.ModularUI;
 import gregtech.api.metatileentity.MetaTileEntity;
 import gregtech.api.metatileentity.MetaTileEntityHolder;
 import gregtech.api.metatileentity.multiblock.IMultiAbilityProvider;
+import gregtech.api.metatileentity.multiblock.IMultiblockAbilityPart;
 import gregtech.api.metatileentity.multiblock.MultiblockAbility;
 import gregtech.api.render.ICubeRenderer;
 import gregtech.api.render.OrientedOverlayRenderer;
@@ -74,7 +76,8 @@ import java.util.List;
  * AE2 (item + ae2fc fluid patterns) and feeds the host machine via abilities.
  */
 public class MetaTileEntityPatternHatch extends MetaTileEntityMultiblockPart
-        implements IPatternHatch, IMultiAbilityProvider, IInterfaceHost {
+        implements IPatternHatch, IMultiblockAbilityPart<IItemHandlerModifiable>,
+        IMultiAbilityProvider, IInterfaceHost {
 
     public static final int PATTERN_SLOTS = 36;
     public static final int CATALYST_SLOTS = 4;
@@ -86,7 +89,21 @@ public class MetaTileEntityPatternHatch extends MetaTileEntityMultiblockPart
     private static final OrientedOverlayRenderer PATTERN_HATCH_OVERLAY =
             new OrientedOverlayRenderer("machines/pattern_hatch_overlay", OverlayFace.FRONT);
 
-    private final ItemStackHandler patternInventory = new ItemStackHandler(PATTERN_SLOTS) {
+    /**
+     * 样板库存使用 AE2 的 AppEngInternalInventory（36 槽、每槽 1 个）：
+     * NAE2 多功能样板工具的按钮处理会把样板库存强转成该类型（否则服务端崩溃），
+     * 同时这也与 AE 接口的样板槽语义一致。
+     */
+    private final AppEngInternalInventory patternInventory = new AppEngInternalInventory(new IAEAppEngInventory() {
+        @Override
+        public void saveChanges() {
+        }
+
+        @Override
+        public void onChangeInventory(IItemHandler inv, int slot, InvOperation mc,
+                                      ItemStack removedStack, ItemStack newStack) {
+        }
+    }, PATTERN_SLOTS, 1) {
         @Override
         protected void onContentsChanged(int slot) {
             super.onContentsChanged(slot);
@@ -178,11 +195,25 @@ public class MetaTileEntityPatternHatch extends MetaTileEntityMultiblockPart
     // ---------- Multiblock abilities ----------
 
     @Override
+    public MultiblockAbility<IItemHandlerModifiable> getAbility() {
+        return MultiblockAbility.IMPORT_ITEMS;
+    }
+
+    @Override
+    public void registerAbilities(List<IItemHandlerModifiable> abilityList) {
+        // 结构判定只检查 getAbility() 声明的能力，不依赖这里注册的处理器；
+        // 因此不把 36 槽缓存注入机器的普通输入库存，防止手动合成吞掉样板材料。
+    }
+
+    @Override
     public MultiblockAbility<?>[] getAbilities() {
-        // 只注册 PATTERN_HATCH 能力用于活动槽调度；
-        // 绝不把缓存注册成 IMPORT_ITEMS/IMPORT_FLUIDS，否则会把 36 槽缓存混进机器
-        // 的普通输入库存（导致手动合成会吞掉样板缓存材料）。
-        return new MultiblockAbility<?>[]{PatternHatchAbilities.PATTERN_HATCH};
+        // 声明 IMPORT_ITEMS/IMPORT_FLUIDS 让样板仓能匹配多方块结构里的输入总线/输入仓位
+        // （fork 的 abilityPartPredicate 只认 IMultiblockAbilityPart.getAbility()）；
+        // PATTERN_HATCH 供活动槽调度发现。真正给机器喂料走 PatternMachineLogic 的活动槽视图。
+        return new MultiblockAbility<?>[]{
+                MultiblockAbility.IMPORT_ITEMS,
+                MultiblockAbility.IMPORT_FLUIDS,
+                PatternHatchAbilities.PATTERN_HATCH};
     }
 
     @Override
@@ -191,6 +222,7 @@ public class MetaTileEntityPatternHatch extends MetaTileEntityMultiblockPart
         if (ability == PatternHatchAbilities.PATTERN_HATCH) {
             abilityList.add(this);
         }
+        // IMPORT_ITEMS / IMPORT_FLUIDS：只声明能力用于结构成型，不注入缓存到机器输入。
     }
 
     public EnumSet<EnumFacing> getConnectableSides() {
