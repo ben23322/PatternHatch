@@ -1,5 +1,16 @@
 # 更新日志
 
+## [0.1.34] - 2026-08-01
+
+### 修复（TJ 平行机崩服 - 第二轮）
+
+- 新增 MixinTJAbstractParallelWorkableHandler：distinct 模式但输入总线为 0 时
+  每 tick 在 update 入口自动关闭 distinct（写入 NBT 持久化）。TJ 允许结构在
+  无物品输入总线时成型（纯流体配方图 minInputs=0），且 NBT 加载不会像
+  setDistinct 那样拦截无总线开启 distinct，导致 checkRecipeInputsDirty 对
+  长度 0 的矩阵取 [0] 崩服。修复后机器退回合并输入路径安静待机，不再崩服。
+- 保留 0.1.33 的 getInputBus 空列表防护作为第二道保险
+
 ## [0.1.33] - 2026-08-01
 
 ### 修复（服务器）

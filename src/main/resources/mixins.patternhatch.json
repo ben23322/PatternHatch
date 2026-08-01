@@ -10,7 +10,8 @@
     "MixinWorkableTieredMetaTileEntity",
     "MixinMultiblockRecipeLogicInput",
     "MixinMultiblockRecipeLogicDebug",
-    "MixinTJMultiblockControllerBase"
+    "MixinTJMultiblockControllerBase",
+    "MixinTJAbstractParallelWorkableHandler"
   ],
   "injectors": {
     "defaultRequire": 1
