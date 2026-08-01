@@ -395,6 +395,7 @@ public class MetaTileEntityPatternHatch extends MetaTileEntityMultiblockPart
         }
         PatternHatchDebug.log("[PatternHatch] pushPattern slot=" + slotIndex);
         PatternSlotEntry entry = patternSlots[slotIndex];
+        boolean fluidFilledFromInv = false;
         for (int i = 0; i < craftingInv.getSizeInventory(); i++) {
             ItemStack input = craftingInv.getStackInSlot(i);
             if (input.isEmpty()) {
@@ -404,6 +405,7 @@ public class MetaTileEntityPatternHatch extends MetaTileEntityMultiblockPart
                 Object unpacked = FakeItemRegister.getStack(input);
                 if (unpacked instanceof FluidStack) {
                     entry.getFluidCache().fill((FluidStack) unpacked, true);
+                    fluidFilledFromInv = true;
                     PatternHatchDebug.log("[PatternHatch] pushPattern fluid=" + ((FluidStack) unpacked).getFluid().getName()
                             + " x" + ((FluidStack) unpacked).amount);
                 }
@@ -419,17 +421,21 @@ public class MetaTileEntityPatternHatch extends MetaTileEntityMultiblockPart
         }
         // Fallback: unpack fluid packets directly from the pattern details.
         try {
-            for (IAEItemStack fluidInput : patternDetails.getCondensedInputs()) {
-                if (fluidInput == null) {
-                    continue;
-                }
-                Object unpacked = FakeItemRegister.getStack(fluidInput);
-                if (unpacked instanceof FluidStack) {
-                    entry.getFluidCache().fill((FluidStack) unpacked, true);
-                } else if (unpacked instanceof appeng.api.storage.data.IAEFluidStack) {
-                    FluidStack fs = ((appeng.api.storage.data.IAEFluidStack) unpacked).getFluidStack();
-                    if (fs != null) {
-                        entry.getFluidCache().fill(fs, true);
+            // 从 crafting 库存已经解包过流体时，不再从 pattern 详情重复填充，
+            // 否则每次 push 流体都会双份入缓存（10 批推 2880mB 而非 1440mB）。
+            if (!fluidFilledFromInv) {
+                for (IAEItemStack fluidInput : patternDetails.getCondensedInputs()) {
+                    if (fluidInput == null) {
+                        continue;
+                    }
+                    Object unpacked = FakeItemRegister.getStack(fluidInput);
+                    if (unpacked instanceof FluidStack) {
+                        entry.getFluidCache().fill((FluidStack) unpacked, true);
+                    } else if (unpacked instanceof appeng.api.storage.data.IAEFluidStack) {
+                        FluidStack fs = ((appeng.api.storage.data.IAEFluidStack) unpacked).getFluidStack();
+                        if (fs != null) {
+                            entry.getFluidCache().fill(fs, true);
+                        }
                     }
                 }
             }

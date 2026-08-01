@@ -104,6 +104,10 @@ public final class PatternMachineLogic {
         }
         long voltage = rc.getEnergyContainer() != null ? rc.getEnergyContainer().getInputVoltage() : Long.MAX_VALUE;
         int minTank = minTankCapacity(rc.getOutputFluidInventory());
+        RecipeMap<?> recipeMap = currentRecipeMap(rc);
+        if (recipeMap == null) {
+            return;
+        }
         ActiveSlot selected = null;
         outer:
         for (IPatternHatch hatch : hatches) {
@@ -112,7 +116,7 @@ public final class PatternMachineLogic {
                     continue; // 空槽不搜索，省开销
                 }
                 try {
-                    Recipe recipe = rc.recipeMap.searchRecipe(
+                    Recipe recipe = recipeMap.searchRecipe(
                             voltage,
                             buildItemView(hatch, entry.getSlotIndex()),
                             buildFluidView(hatch, entry.getSlotIndex()),
@@ -141,7 +145,7 @@ public final class PatternMachineLogic {
                 }
             }
             try {
-                Recipe found = rc.recipeMap.searchRecipe(
+                Recipe found = recipeMap.searchRecipe(
                         voltage,
                         buildItemView(selected.hatch, selected.slotIndex),
                         buildFluidView(selected.hatch, selected.slotIndex),
@@ -339,6 +343,43 @@ public final class PatternMachineLogic {
         }
         // 没有活动槽时回退到机器原有流体输入（普通输入仓），保证手动流体合成可用
         return original != null ? original : EMPTY_FLUIDS;
+    }
+
+    /**
+     * 返回机器当前模式对应的配方图。
+     * RecipeMapMultiblockController.recipeMap 字段固定为构造时的第一张图，
+     * GA/TJ 的"多配方图"机器（如大型灌装机按 罐头/灌装/固化 切换）会覆盖
+     * getRecipeMapIndex()/getRecipeMaps()，这里反射取当前索引的图；
+     * 普通单图机器没有这两个方法，回退 recipeMap 字段。
+     */
+    private static RecipeMap<?> currentRecipeMap(RecipeMapMultiblockController rc) {
+        try {
+            Class<?> clazz = rc.getClass();
+            Map<String, Method> cache = TJ_METHOD_CACHE.computeIfAbsent(clazz, k -> new HashMap<>());
+            Method indexMethod = cache.get("getRecipeMapIndex");
+            Method mapsMethod = cache.get("getRecipeMaps");
+            if (indexMethod == null) {
+                try {
+                    indexMethod = clazz.getMethod("getRecipeMapIndex");
+                    mapsMethod = clazz.getMethod("getRecipeMaps");
+                } catch (NoSuchMethodException ignored) {
+                    return rc.recipeMap;
+                }
+                cache.put("getRecipeMapIndex", indexMethod);
+                cache.put("getRecipeMaps", mapsMethod);
+            }
+            Object index = indexMethod.invoke(rc);
+            Object maps = mapsMethod.invoke(rc);
+            if (index instanceof Integer && maps instanceof RecipeMap[]) {
+                RecipeMap<?>[] array = (RecipeMap<?>[]) maps;
+                int i = (Integer) index;
+                if (i >= 0 && i < array.length) {
+                    return array[i];
+                }
+            }
+        } catch (Exception ignored) {
+        }
+        return rc.recipeMap;
     }
 
     // ---------- TJ 平行机输入重定向 ----------
