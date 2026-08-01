@@ -8,7 +8,6 @@
     "MixinMultiblockControllerBase",
     "MixinRecipeMapMultiblockController",
     "MixinWorkableTieredMetaTileEntity",
-    "MixinMultiblockRecipeLogicInput",
     "MixinMultiblockRecipeLogicInput"
   ],
   "injectors": {
