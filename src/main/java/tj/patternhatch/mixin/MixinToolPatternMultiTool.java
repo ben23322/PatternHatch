@@ -57,6 +57,7 @@ public abstract class MixinToolPatternMultiTool {
         int guiId = GuiBridge.PATTERN_MULTI_TOOL.ordinal() << 4 | AEPartLocation.INTERNAL.ordinal() | (1 << 3);
         player.openGui(NAE2.instance, guiId, world, pos.getX(), pos.getY(), pos.getZ());
         player.swingArm(hand);
+        System.out.println("[PatternHatch] NAE2 tool: opened PMT gui on pattern hatch at " + pos);
         cir.setReturnValue(EnumActionResult.SUCCESS);
     }
 
@@ -75,6 +76,7 @@ public abstract class MixinToolPatternMultiTool {
         }
         ObjPatternMultiTool obj = new ObjPatternMultiTool(is);
         obj.setInterface(hatch);
+        System.out.println("[PatternHatch] NAE2 tool: bound interface host (pattern hatch) at " + bp);
         cir.setReturnValue(obj);
     }
 }

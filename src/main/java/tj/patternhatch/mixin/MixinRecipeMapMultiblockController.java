@@ -20,6 +20,14 @@ public abstract class MixinRecipeMapMultiblockController implements IPatternHatc
     @Shadow
     protected MultiblockRecipeLogic recipeMapWorkable;
 
+    /** 控制器真实普通输入库存（输入总线等，不含样板仓缓存）。 */
+    @Shadow
+    protected IItemHandlerModifiable inputInventory;
+
+    /** 控制器真实普通流体输入（输入仓等，不含样板仓缓存罐）。 */
+    @Shadow
+    protected IMultipleTankHandler inputFluidInventory;
+
     @Override
     public MultiblockRecipeLogic patternhatch$getWorkable() {
         return recipeMapWorkable;
@@ -33,13 +41,14 @@ public abstract class MixinRecipeMapMultiblockController implements IPatternHatc
     @Inject(method = "getInputInventory", at = @At("HEAD"), cancellable = true)
     private void patternhatch$inputInventory(CallbackInfoReturnable<IItemHandlerModifiable> cir) {
         RecipeMapMultiblockController controller = (RecipeMapMultiblockController) (Object) this;
-        cir.setReturnValue(PatternMachineLogic.getInputInventory(controller, cir.getReturnValue()));
+        // 不能依赖 cir.getReturnValue()（HEAD 注入时恒为 null），
+        // 直接读取控制器真实的普通输入库存字段。
+        cir.setReturnValue(PatternMachineLogic.getInputInventory(controller, this.inputInventory));
     }
 
     @Inject(method = "getInputFluidInventory", at = @At("HEAD"), cancellable = true)
     private void patternhatch$inputFluidInventory(CallbackInfoReturnable<IMultipleTankHandler> cir) {
         RecipeMapMultiblockController controller = (RecipeMapMultiblockController) (Object) this;
-        cir.setReturnValue(PatternMachineLogic.getInputFluidInventory(controller, cir.getReturnValue()));
+        cir.setReturnValue(PatternMachineLogic.getInputFluidInventory(controller, this.inputFluidInventory));
     }
 }
-
