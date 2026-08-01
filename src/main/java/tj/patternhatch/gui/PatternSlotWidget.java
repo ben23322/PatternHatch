@@ -1,6 +1,7 @@
 package tj.patternhatch.gui;
 
 import appeng.items.misc.ItemEncodedPattern;
+import gregtech.api.gui.resources.TextureArea;
 import gregtech.api.gui.widgets.SlotWidget;
 import net.minecraft.item.ItemStack;
 import net.minecraftforge.items.IItemHandler;
@@ -8,8 +9,12 @@ import net.minecraftforge.items.IItemHandler;
 /** 样板槽：只允许放入 AE2 已编码的样板（空槽可放）。 */
 public class PatternSlotWidget extends SlotWidget {
 
+    private static final TextureArea PATTERN_SLOT_BG =
+            TextureArea.fullImage("textures/gui/overlay_slot/pattern_me.png");
+
     public PatternSlotWidget(IItemHandler itemHandler, int slotIndex, int xPosition, int yPosition) {
         super(itemHandler, slotIndex, xPosition, yPosition, true, true);
+        setBackgroundTexture(PATTERN_SLOT_BG);
     }
 
     @Override
@@ -17,4 +22,3 @@ public class PatternSlotWidget extends SlotWidget {
         return stack.isEmpty() || stack.getItem() instanceof ItemEncodedPattern;
     }
 }
-

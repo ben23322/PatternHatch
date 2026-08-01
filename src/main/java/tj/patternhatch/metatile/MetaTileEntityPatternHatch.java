@@ -33,7 +33,10 @@ import gregtech.api.metatileentity.multiblock.IMultiAbilityProvider;
 import gregtech.api.metatileentity.multiblock.IMultiblockAbilityPart;
 import gregtech.api.metatileentity.multiblock.MultiblockAbility;
 import gregtech.api.render.ICubeRenderer;
+import gregtech.api.render.OrientedOverlayRenderer;
+import gregtech.api.render.OrientedOverlayRenderer.OverlayFace;
 import gregtech.api.render.SimpleCubeRenderer;
+import gregtech.api.render.SimpleSidedCubeRenderer;
 import gregtech.common.metatileentities.electric.multiblockpart.MetaTileEntityMultiblockPart;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.inventory.InventoryCrafting;
@@ -55,6 +58,10 @@ import tj.patternhatch.gui.PatternSlotWidget;
 import tj.patternhatch.gui.SyncedTextWidget;
 import tj.patternhatch.pattern.PatternSlotEntry;
 
+import codechicken.lib.render.CCRenderState;
+import codechicken.lib.render.pipeline.IVertexOperation;
+import codechicken.lib.vec.Matrix4;
+
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.EnumSet;
@@ -73,6 +80,10 @@ public class MetaTileEntityPatternHatch extends MetaTileEntityMultiblockPart
     public static final int CIRCUIT_SLOTS = 1;
 
     private static final ICubeRenderer PATTERN_HATCH_CASING = new SimpleCubeRenderer("machines/pattern_hatch");
+    private static final ICubeRenderer PATTERN_HATCH_GTNH_CASING =
+            new SimpleSidedCubeRenderer("machines/pattern_hatch_casing");
+    private static final OrientedOverlayRenderer PATTERN_HATCH_OVERLAY =
+            new OrientedOverlayRenderer("machines/pattern_hatch_overlay", OverlayFace.FRONT);
 
     private final ItemStackHandler patternInventory = new ItemStackHandler(PATTERN_SLOTS) {
         @Override
@@ -495,7 +506,13 @@ public class MetaTileEntityPatternHatch extends MetaTileEntityMultiblockPart
         if (getController() != null) {
             return super.getBaseTexture();
         }
-        return PATTERN_HATCH_CASING;
+        return PATTERN_HATCH_GTNH_CASING;
+    }
+
+    @Override
+    public void renderMetaTileEntity(CCRenderState renderState, Matrix4 translation, IVertexOperation[] pipeline) {
+        super.renderMetaTileEntity(renderState, translation, pipeline);
+        PATTERN_HATCH_OVERLAY.render(renderState, translation, pipeline, getFrontFacing(), false);
     }
 
     @Override
@@ -503,7 +520,7 @@ public class MetaTileEntityPatternHatch extends MetaTileEntityMultiblockPart
         ModularUI.Builder builder = ModularUI.builder(GuiTextures.BACKGROUND_EXTENDED, 280, 236);
         builder.widget(new tj.patternhatch.gui.ShadowLabelWidget(8, 5, "container.patternhatch.pattern_hatch", -1));
         gregtech.api.gui.resources.TextureArea line =
-                gregtech.api.gui.resources.TextureArea.fullImage("patternhatch:textures/gui/line.png");
+                gregtech.api.gui.resources.TextureArea.fullImage("textures/gui/line.png");
         builder.widget(new tj.patternhatch.gui.FilledRectWidget(7, 13, 163, 77, 0xFFFFFFFF));
         builder.widget(new tj.patternhatch.gui.FilledRectWidget(8, 14, 161, 75, 0xFF8A90A0));
         builder.widget(new tj.patternhatch.gui.FilledRectWidget(9, 15, 159, 73, 0xFF3D3D47));
