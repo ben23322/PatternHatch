@@ -24,6 +24,7 @@ public abstract class MixinMultiblockRecipeLogicDebug {
             String machineClass = mte == null ? "null" : mte.getClass().getSimpleName();
             System.out.println("[PatternHatch] machine setup HEAD recipe=" + recipe.getOutputs()
                     + " machine=" + machineClass
+                    + " recipeInputs=" + recipe.getInputs()
                     + " lruCount=" + logic.previousRecipe.getCachedRecipeCount());
         } catch (Exception e) {
             System.out.println("[PatternHatch] machine setup HEAD log failed: " + e);
