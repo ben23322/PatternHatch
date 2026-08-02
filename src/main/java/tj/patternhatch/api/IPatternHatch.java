@@ -1,6 +1,7 @@
 package tj.patternhatch.api;
 
 import net.minecraftforge.items.IItemHandler;
+import net.minecraftforge.fluids.IFluidTank;
 import tj.patternhatch.pattern.PatternSlotEntry;
 
 import java.util.List;
@@ -13,6 +14,9 @@ public interface IPatternHatch {
     IItemHandler getCatalystInventory();
 
     IItemHandler getCircuitInventory();
+
+    /** 共享流体催化剂罐（配方中"不消耗"的流体催化剂，灌一次永久生效）。 */
+    IFluidTank[] getFluidCatalystTanks();
 
     void markDirty();
 

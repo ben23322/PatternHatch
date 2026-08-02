@@ -41,6 +41,7 @@ import gregtech.api.capability.impl.FluidTankList;
 import gregtech.api.gui.GuiTextures;
 import gregtech.api.gui.ModularUI;
 import gregtech.api.gui.widgets.ClickButtonWidget;
+import gregtech.api.gui.widgets.TankWidget;
 import gregtech.api.metatileentity.MetaTileEntity;
 import gregtech.api.metatileentity.MetaTileEntityHolder;
 import gregtech.api.metatileentity.multiblock.IMultiAbilityProvider;
@@ -65,6 +66,8 @@ import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.World;
 import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.fluids.IFluidTank;
+import net.minecraftforge.fluids.FluidTank;
+import net.minecraftforge.fluids.capability.IFluidHandler;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.IItemHandlerModifiable;
 import net.minecraftforge.items.ItemStackHandler;
@@ -97,6 +100,8 @@ public class MetaTileEntityPatternHatch extends MetaTileEntityMultiblockPart
     public static final int PATTERN_SLOTS = 36;
     public static final int CATALYST_SLOTS = 9;
     public static final int CIRCUIT_SLOTS = 2;
+    public static final int FLUID_CATALYST_TANKS = 3;
+    public static final int FLUID_CATALYST_CAPACITY = 256000;
     /** 单槽缓存达到该数量时 isBusy 返回 true，让 AE 合成 CPU 暂停推料（默认最大=不门控）。 */
     public static int BUSY_THRESHOLD = Integer.MAX_VALUE;
 
@@ -131,6 +136,8 @@ public class MetaTileEntityPatternHatch extends MetaTileEntityMultiblockPart
     private final PatternSlotEntry[] patternSlots = new PatternSlotEntry[PATTERN_SLOTS];
     private final ItemStackHandler catalystInventory = new ItemStackHandler(CATALYST_SLOTS);
     private final ItemStackHandler circuitInventory = new ItemStackHandler(CIRCUIT_SLOTS);
+    /** 共享流体催化剂罐：配方中"不消耗"的流体催化剂（如模具液、催化剂液），灌一次永久生效。 */
+    private final FluidTank[] fluidCatalystTanks = new FluidTank[FLUID_CATALYST_TANKS];
     /**
      * 供 NAE2 多功能样板工具展示用的“升级仓”：固定报告 3 个样板扩展，
      * 让工具的接口视图解锁全部 4 行（36 槽），且不显示可编辑的升级槽。
@@ -177,6 +184,9 @@ public class MetaTileEntityPatternHatch extends MetaTileEntityMultiblockPart
         for (int i = 0; i < patternSlots.length; i++) {
             patternSlots[i] = new PatternSlotEntry(i);
         }
+        for (int i = 0; i < FLUID_CATALYST_TANKS; i++) {
+            fluidCatalystTanks[i] = new FluidTank(FLUID_CATALYST_CAPACITY);
+        }
     }
 
     @Override
@@ -209,6 +219,17 @@ public class MetaTileEntityPatternHatch extends MetaTileEntityMultiblockPart
 
     public IItemHandlerModifiable getPatternInventory() {
         return patternInventory;
+    }
+
+    @Override
+    public IFluidTank[] getFluidCatalystTanks() {
+        return fluidCatalystTanks.clone();
+    }
+
+    /** 暴露流体能力：流体管道/泵可直接向催化剂罐灌入或抽出。 */
+    @Override
+    public IFluidHandler getFluidInventory() {
+        return new gregtech.api.capability.impl.FluidTankList(false, (IFluidTank[]) fluidCatalystTanks);
     }
 
     @Override
@@ -686,6 +707,13 @@ public class MetaTileEntityPatternHatch extends MetaTileEntityMultiblockPart
         // "弹回AE"按钮：放在两个电路槽右边
         builder.widget(new ClickButtonWidget(46, 132, 68, 14,
                 "widget.patternhatch.return_to_ae", data -> returnCacheToAE()));
+        // 3 个流体催化剂罐：弹回AE按钮右侧，可用流体容器点击灌入/抽出，也可接流体管道
+        for (int i = 0; i < FLUID_CATALYST_TANKS; i++) {
+            TankWidget tankWidget = new TankWidget(fluidCatalystTanks[i], 118 + i * 18, 132, 18, 18)
+                    .setContainerClicking(true, true)
+                    .setBackgroundTexture(GuiTextures.FLUID_SLOT);
+            builder.widget(tankWidget);
+        }
 
         builder.bindPlayerInventory(entityPlayer.inventory, GuiTextures.SLOT, 8, 156);
         return builder.build(getHolder(), entityPlayer);
@@ -789,6 +817,11 @@ public class MetaTileEntityPatternHatch extends MetaTileEntityMultiblockPart
             slotsTag.setTag("Slot_" + entry.getSlotIndex(), entry.writeToNBT(new NBTTagCompound()));
         }
         data.setTag("PatternSlots", slotsTag);
+        NBTTagCompound catalystFluidsTag = new NBTTagCompound();
+        for (int i = 0; i < FLUID_CATALYST_TANKS; i++) {
+            catalystFluidsTag.setTag("Tank_" + i, fluidCatalystTanks[i].writeToNBT(new NBTTagCompound()));
+        }
+        data.setTag("FluidCatalystTanks", catalystFluidsTag);
         return data;
     }
 
@@ -811,6 +844,12 @@ public class MetaTileEntityPatternHatch extends MetaTileEntityMultiblockPart
                 if (slotsTag.hasKey(key)) {
                     entry.readFromNBT(slotsTag.getCompoundTag(key));
                 }
+            }
+        }
+        if (data.hasKey("FluidCatalystTanks")) {
+            NBTTagCompound catalystFluidsTag = data.getCompoundTag("FluidCatalystTanks");
+            for (int i = 0; i < FLUID_CATALYST_TANKS && catalystFluidsTag.hasKey("Tank_" + i); i++) {
+                fluidCatalystTanks[i].readFromNBT(catalystFluidsTag.getCompoundTag("Tank_" + i));
             }
         }
     }

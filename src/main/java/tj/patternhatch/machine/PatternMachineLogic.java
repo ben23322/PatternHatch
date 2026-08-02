@@ -550,7 +550,15 @@ public final class PatternMachineLogic {
     }
 
     private static IMultipleTankHandler buildFluidView(IPatternHatch hatch, int slotIndex) {
-        return new FluidTankList(false, hatch.getPatternSlots().get(slotIndex).getFluidCache().getTanks());
+        List<IFluidTank> tanks = new ArrayList<>();
+        for (IFluidTank tank : hatch.getPatternSlots().get(slotIndex).getFluidCache().getTanks()) {
+            tanks.add(tank);
+        }
+        // 共享流体催化剂罐：所有样板槽的流体视图都带上，配方只做存在性检查、永不消耗
+        for (IFluidTank tank : hatch.getFluidCatalystTanks()) {
+            tanks.add(tank);
+        }
+        return new FluidTankList(false, tanks);
     }
 
     private static boolean isSlotEmpty(IPatternHatch hatch, int slotIndex) {
