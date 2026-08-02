@@ -4,8 +4,7 @@
   "package": "tj.patternhatch.mixin",
   "compatibilityLevel": "JAVA_8",
   "mixins": [
-    "MixinToolPatternMultiTool",
-    "MixinContainerPatternMultiTool"
+    "MixinToolPatternMultiTool"
   ],
   "injectors": {
     "defaultRequire": 0

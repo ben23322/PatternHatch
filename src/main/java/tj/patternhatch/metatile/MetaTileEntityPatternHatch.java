@@ -59,6 +59,7 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.inventory.InventoryCrafting;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.nbt.NBTTagList;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.NonNullList;
@@ -717,6 +718,96 @@ public class MetaTileEntityPatternHatch extends MetaTileEntityMultiblockPart
 
         builder.bindPlayerInventory(entityPlayer.inventory, GuiTextures.SLOT, 8, 156);
         return builder.build(getHolder(), entityPlayer);
+    }
+
+    /**
+     * 把 NAE2 多功能样板工具（手持或背包内）里存储的样板搬进仓室空槽，
+     * 用于快捷把 AE 接口里的样板搬到样板仓：接口 → 工具 → 仓室。
+     */
+    public void importPatternsFromTool(EntityPlayer player) {
+        if (getWorld() == null || getWorld().isRemote || player == null) {
+            return;
+        }
+        ItemStack tool = findPatternMultiTool(player);
+        if (tool == null || tool.isEmpty() || !tool.hasTagCompound()) {
+            PatternHatchDebug.log("[PatternHatch] import tool: no NAE2 pattern tool found");
+            return;
+        }
+        try {
+            NBTTagCompound root = tool.getTagCompound();
+            NBTTagCompound invTag = root.getCompoundTag("inv");
+            NBTTagList items = invTag.getTagList("Items", 10);
+            List<ItemStack> patterns = new ArrayList<>();
+            for (int i = 0; i < items.tagCount(); i++) {
+                ItemStack s = new ItemStack(items.getCompoundTagAt(i));
+                if (!s.isEmpty()) {
+                    patterns.add(s);
+                }
+            }
+            if (patterns.isEmpty()) {
+                PatternHatchDebug.log("[PatternHatch] import tool: tool has no patterns");
+                return;
+            }
+            int idx = 0;
+            int moved = 0;
+            for (ItemStack p : patterns) {
+                while (idx < patternInventory.getSlots() && !patternInventory.getStackInSlot(idx).isEmpty()) {
+                    idx++;
+                }
+                if (idx >= patternInventory.getSlots()) {
+                    break;
+                }
+                patternInventory.setStackInSlot(idx, p.copy());
+                idx++;
+                moved++;
+            }
+            if (moved == 0) {
+                PatternHatchDebug.log("[PatternHatch] import tool: hatch is full");
+                return;
+            }
+            // 从工具里移除已搬走的样板（保留放不下的）
+            int removed = 0;
+            NBTTagList newItems = new NBTTagList();
+            for (int i = 0; i < items.tagCount(); i++) {
+                if (removed < moved) {
+                    removed++;
+                    continue;
+                }
+                newItems.appendTag(items.getCompoundTagAt(i));
+            }
+            if (newItems.tagCount() == 0) {
+                root.removeTag("inv");
+            } else {
+                invTag.setTag("Items", newItems);
+            }
+            PatternHatchDebug.log("[PatternHatch] import tool: moved " + moved + " patterns into hatch");
+            markDirty();
+            notifyCraftingGrid();
+        } catch (Exception e) {
+            PatternHatchDebug.warn("[PatternHatch] import tool error: " + e);
+        }
+    }
+
+    private static ItemStack findPatternMultiTool(EntityPlayer player) {
+        ItemStack held = player.getHeldItemMainhand();
+        if (isPatternMultiTool(held)) {
+            return held;
+        }
+        for (int i = 0; i < player.inventory.getSizeInventory(); i++) {
+            ItemStack s = player.inventory.getStackInSlot(i);
+            if (isPatternMultiTool(s)) {
+                return s;
+            }
+        }
+        return ItemStack.EMPTY;
+    }
+
+    private static boolean isPatternMultiTool(ItemStack s) {
+        if (s == null || s.isEmpty() || s.getItem() == null) {
+            return false;
+        }
+        return "co.neeve.nae2.common.items.patternmultitool.ToolPatternMultiTool"
+                .equals(s.getItem().getClass().getName());
     }
 
     /**

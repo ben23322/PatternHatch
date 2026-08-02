@@ -47,11 +47,19 @@ public abstract class MixinToolPatternMultiTool {
     private void patternhatch$onItemUseFirst(EntityPlayer player, World world, BlockPos pos, EnumFacing side,
                                              float hitX, float hitY, float hitZ, EnumHand hand,
                                              CallbackInfoReturnable<EnumActionResult> cir) {
-        if (player.isSneaking() || world == null || world.isRemote) {
+        if (world == null || world.isRemote) {
             return;
         }
         MetaTileEntityPatternHatch hatch = patternhatch$getHatch(world.getTileEntity(pos));
         if (hatch == null) {
+            return;
+        }
+        if (player.isSneaking()) {
+            // shift+右键：把工具里存的所有样板一键导入仓室
+            PatternHatchDebug.log("[PatternHatch] NAE2 tool: shift+right-click import all patterns at " + pos);
+            hatch.importPatternsFromTool(player);
+            player.swingArm(hand);
+            cir.setReturnValue(EnumActionResult.SUCCESS);
             return;
         }
         // 直接打开 NAE2 工具界面（绕过 hasPermissions 对未接入网络的 IActionHost 的空指针风险）。
@@ -77,7 +85,24 @@ public abstract class MixinToolPatternMultiTool {
         }
         ObjPatternMultiTool obj = new ObjPatternMultiTool(is);
         obj.setInterface(hatch);
-        PatternHatchDebug.log("[PatternHatch] NAE2 tool: bound interface host (pattern hatch) at " + bp);
+        int filled = 0;
+        String type = "none";
+        if (obj.getPatternInventory() != null) {
+            for (int i = 0; i < obj.getPatternInventory().getSlots(); i++) {
+                if (obj.getPatternInventory().getStackInSlot(i) != null
+                        && !obj.getPatternInventory().getStackInSlot(i).isEmpty()) {
+                    filled++;
+                    if (type.equals("none")) {
+                        ItemStack s = obj.getPatternInventory().getStackInSlot(i);
+                        if (s.getItem() != null) {
+                            type = s.getItem().getClass().getSimpleName() + ":" + s.getItem().getRegistryName();
+                        }
+                    }
+                }
+            }
+        }
+        PatternHatchDebug.log("[PatternHatch] NAE2 tool: bound interface host (pattern hatch) at " + bp
+                + " toolPatterns=" + filled + " toolType=" + type);
         cir.setReturnValue(obj);
     }
 }
